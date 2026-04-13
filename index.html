@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Smile Dental Clinic | Smart Appointment Scheduler</title>
+    <!-- Google Fonts & simple icons (Font Awesome) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #e0f2fe 0%, #b9e0f5 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* dental pattern overlay (subtle tooth pattern) */
+        body::before {
+            content: "🦷";
+            font-size: 140px;
+            opacity: 0.05;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            pointer-events: none;
+            transform: rotate(-10deg);
+        }
+
+        /* main chat container */
+        .chat-container {
+            width: 100%;
+            max-width: 550px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.4);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* header with dental branding */
+        .chat-header {
+            background: #1e6f5c;  /* fresh dental teal */
+            background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%);
+            padding: 20px 24px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 2px solid #ffd966;
+        }
+        .header-icon {
+            background: white;
+            width: 52px;
+            height: 52px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #1e6f5c;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .header-text h1 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .header-text p {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* messages area */
+        .chat-messages {
+            height: 450px;
+            overflow-y: auto;
+            padding: 20px 18px;
+            background: #fefdf8;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* message bubbles */
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: fadeInUp 0.2s ease;
+        }
+        .bot-message {
+            align-self: flex-start;
+        }
+        .user-message {
+            align-self: flex-end;
+        }
+        .bubble {
+            padding: 12px 18px;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+        .bot-message .bubble {
+            background: #eef2f5;
+            color: #1e2a32;
+            border-bottom-left-radius: 6px;
+        }
+        .user-message .bubble {
+            background: #1e6f5c;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+        .message-time {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            margin-left: 12px;
+            margin-right: 12px;
+            color: #6c7a89;
+        }
+
+        /* button group inside messages */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .chat-btn {
+            background: white;
+            border: 1.5px solid #cbdde6;
+            padding: 8px 18px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1e6f5c;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .chat-btn:hover {
+            background: #e0f2e9;
+            border-color: #1e6f5c;
+            transform: translateY(-1px);
+        }
+        .chat-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* input area (for text prompts) */
+        .input-area {
+            padding: 16px 20px 24px;
+            background: white;
+            border-top: 1px solid #e9edf2;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .input-field {
+            flex: 1;
+            padding: 12px 18px;
+            border-radius: 60px;
+            border: 1px solid #cfdfe8;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: 0.2s;
+        }
+        .input-field:focus {
+            border-color: #1e6f5c;
+            box-shadow: 0 0 0 2px rgba(30,111,92,0.2);
+        }
+        .send-btn {
+            background: #1e6f5c;
+            border: none;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 60px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .send-btn:hover {
+            background: #0f5545;
+            transform: scale(0.96);
+        }
+        .typing-indicator {
+            font-size: 0.8rem;
+            color: #6b7b8c;
+            padding: 8px 12px;
+            background: #eef2f5;
+            width: fit-content;
+            border-radius: 30px;
+            margin-top: 6px;
+        }
+
+        /* small loader */
+        .loader-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+        .loader-dots span {
+            width: 6px;
+            height: 6px;
+            background: #6b7b8c;
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 10px;
+            background: #f7f9fc;
+            color: #7a8b9b;
+            border-top: 1px solid #e2e8f0;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e9edf2;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #b9cfdf;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="header-icon">
+            <i class="fas fa-tooth"></i>
+        </div>
+        <div class="header-text">
+            <h1>Smile Dental Clinic</h1>
+            <p>✨ Smart scheduling • gentle care</p>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <!-- messages will be injected here -->
+        <div class="message bot-message">
+            <div class="bubble">
+                👋 Welcome to Smile Dental Clinic! I'm your scheduling assistant.<br>
+                Would you like to book as a <strong>New Patient</strong> or manage an <strong>Existing Patient</strong> appointment?
+            </div>
+            <div class="button-group" id="initialButtons">
+                <button class="chat-btn" data-action="new_patient">🦷 New Patient</button>
+                <button class="chat-btn" data-action="existing_patient">📋 Existing Patient</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area" id="inputArea" style="display: none;">
+        <input type="text" id="userInput" class="input-field" placeholder="Type your answer..." autocomplete="off">
+        <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+    </div>
+    <footer>⭐ Secure &nbsp;|&nbsp; Powered by n8n webhook</footer>
+</div>
+
+<script>
+    // ------------------- CONFIGURATION -------------------
+    // REPLACE WITH YOUR ACTUAL N8N WEBHOOK URL (Vercel or n8n endpoint)
+    const N8N_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";  // <-- UPDATE THIS
+    
+    // In-memory state for the conversation (matches n8n required fields)
+    let sessionId = localStorage.getItem('smile_sessionId');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+        localStorage.setItem('smile_sessionId', sessionId);
+    }
+    
+    let currentStep = "start";          // step from backend response
+    let accumulatedData = {};            // stores name, phone, email, etc.
+    let waitingForInput = false;         // if true, input field visible; else buttons mode
+    let currentButtons = [];              // store latest buttons from backend
+    
+    // DOM elements
+    const chatContainer = document.getElementById('chatMessages');
+    const inputArea = document.getElementById('inputArea');
+    const userInputField = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    
+    // Helper: scroll to bottom
+    function scrollToBottom() {
+        const container = document.getElementById('chatMessages');
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    // Helper: show typing indicator (bot thinking)
+    let typingDiv = null;
+    function showTyping() {
+        hideTyping();
+        const typingElement = document.createElement('div');
+        typingElement.classList.add('message', 'bot-message');
+        typingElement.id = 'typingIndicator';
+        typingElement.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Thinking...</div>`;
+        chatContainer.appendChild(typingElement);
+        scrollToBottom();
+    }
+    function hideTyping() {
+        const existing = document.getElementById('typingIndicator');
+        if (existing) existing.remove();
+    }
+    
+    // Add a bot message (text only, optional buttons)
+    function addBotMessage(text, buttons = []) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'bot-message');
+        const bubble = document.createElement('div');
+        bubble.classList.add('bubble');
+        bubble.innerHTML = text.replace(/\n/g, '<br>');
+        messageDiv.appendChild(bubble);
+        
+        if (buttons && buttons.length > 0) {
+            const btnGroup = document.createElement('div');
+            btnGroup.classList.add('button-group');
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.classList.add('chat-btn');
+                button.innerText = btn.text;
+                button.setAttribute('data-value', btn.value);
+                button.addEventListener('click', () => {
+                    // user clicked a button: send action to n8n
+                    sendToWebhook(btn.value, null);
+                });
+                btnGroup.appendChild(button);
+            });
+            messageDiv.appendChild(btnGroup);
+        }
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    // Add a user message (what they typed or clicked)
+    function addUserMessage(content, isButtonClick = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'user-message');
+        const bubble = document.createElement('div');
+        bubble.classList.add('bubble');
+        bubble.innerText = content;
+        messageDiv.appendChild(bubble);
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    // Send request to n8n webhook
+    async function sendToWebhook(actionValue, textInput = null) {
+        // actionValue: button payload (e.g. "new_patient", "confirm_cancel", appointmentId)
+        // textInput: if user typed something (for name, phone, etc.)
+        let payloadAction = actionValue;
+        let updatedData = { ...accumulatedData };
+        
+        // Handle case when user provides text input (input field)
+        if (textInput !== null && waitingForInput) {
+            // determine which field we are collecting based on currentStep from backend
+            // The step could be like "newPatient.name" -> we store in data.name
+            if (currentStep === "newPatient.name") {
+                updatedData.name = textInput;
+            } else if (currentStep === "newPatient.phone") {
+                updatedData.phone = textInput;
+            } else if (currentStep === "newPatient.email") {
+                updatedData.email = textInput;
+            } else if (currentStep === "newPatient.procedure") {
+                updatedData.procedure = textInput;
+            } else if (currentStep === "newPatient.datetime") {
+                updatedData.datetime = textInput;
+            } else if (currentStep === "existingPatient.name") {
+                updatedData.name = textInput;
+            } else if (currentStep === "existingPatient.email") {
+                updatedData.email = textInput;
+            } else if (currentStep === "existingPatient.modifyNewDateTime") {
+                updatedData.newDatetime = textInput;
+            } else if (currentStep === "existingPatient.modifyNewProcedure") {
+                updatedData.newProcedure = textInput;
+            } else {
+                // fallback: generic field
+                updatedData.customInput = textInput;
+            }
+            // after collecting, we send the request with action = null or maybe the step itself
+            payloadAction = null;
+        }
+        
+        // Build request body
+        const requestBody = {
+            sessionId: sessionId,
+            step: currentStep,
+            action: payloadAction,
+            data: updatedData
+        };
+        
+        // if there's a text input and waiting, we also need to pass the step accordingly.
+        if (textInput !== null && waitingForInput) {
+            // ensure step remains as the field collection step, we keep same step
+            // n8n will read data and decide to go to next step.
+        }
+        
+        // Show typing indicator
+        showTyping();
+        
+        try {
+            const response = await fetch(N8N_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+            hideTyping();
+            
+            // expected fields from n8n: { nextStep, text, buttons, data? }
+            const { nextStep, text, buttons = [], data = {} } = result;
+            
+            // Merge returned data (to keep patient info)
+            if (data && Object.keys(data).length) {
+                accumulatedData = { ...accumulatedData, ...data };
+            } else {
+                // if n8n does not send data, keep our updatedData
+                accumulatedData = updatedData;
+            }
+            
+            // Update conversation state
+            currentStep = nextStep || "start";
+            currentButtons = buttons;
+            
+            // Display bot message
+            addBotMessage(text, buttons);
+            
+            // Determine UI mode: if buttons exist and are not empty, we show buttons & hide input field
+            if (buttons && buttons.length > 0) {
+                waitingForInput = false;
+                inputArea.style.display = "none";
+                // clear any pending input
+                userInputField.value = "";
+            } else {
+                // no buttons -> need text input
+                waitingForInput = true;
+                inputArea.style.display = "flex";
+                userInputField.value = "";
+                userInputField.focus();
+                // Also store what kind of field we are expecting (step helps)
+                // no further action required
+            }
+            
+            // if the conversation ended (start over or reset), we might reset accumulatedData partially?
+            if (nextStep === "start" && text.includes("Start Over")) {
+                accumulatedData = {};
+            }
+            
+        } catch (error) {
+            hideTyping();
+            console.error("n8n webhook error:", error);
+            addBotMessage("⚠️ Sorry, the scheduling service is temporarily unavailable. Please try again later or call the clinic directly. (Check n8n webhook URL)", []);
+            // fallback: show retry?
+            waitingForInput = false;
+            inputArea.style.display = "none";
+        }
+    }
+    
+    // Handle user clicks on dynamic buttons (global listener)
+    function handleDynamicButtons() {
+        document.querySelectorAll('.chat-btn').forEach(btn => {
+            // avoid duplicate listeners
+            if (btn.getAttribute('data-listener') === 'true') return;
+            btn.setAttribute('data-listener', 'true');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const actionVal = btn.getAttribute('data-value') || btn.innerText;
+                // For procedure type or appointment selection, action = value
+                // Add user message to chat showing what they clicked
+                addUserMessage(btn.innerText, true);
+                // disable input mode temporarily while processing
+                if (waitingForInput) waitingForInput = false;
+                inputArea.style.display = "none";
+                sendToWebhook(actionVal, null);
+            });
+        });
+    }
+    
+    // observe new messages to attach button listeners
+    const observer = new MutationObserver(() => {
+        handleDynamicButtons();
+    });
+    observer.observe(chatContainer, { childList: true, subtree: true });
+    
+    // send text input from user
+    function sendTextInput() {
+        const rawText = userInputField.value.trim();
+        if (!rawText) return;
+        addUserMessage(rawText, false);
+        userInputField.value = "";
+        // send to webhook as text input
+        sendToWebhook(null, rawText);
+    }
+    
+    sendBtn.addEventListener('click', sendTextInput);
+    userInputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendTextInput();
+    });
+    
+    // ------------- INITIAL SETUP: override the start step with a conversation starter ----------
+    // We already have initial message and buttons in static HTML, but we must tie them to the n8n logic.
+    // Replace static buttons with dynamic ones that call webhook.
+    function bindStaticInitialButtons() {
+        const newBtn = document.querySelector('#initialButtons .chat-btn[data-action="new_patient"]');
+        const existingBtn = document.querySelector('#initialButtons .chat-btn[data-action="existing_patient"]');
+        if (newBtn) {
+            newBtn.addEventListener('click', () => {
+                addUserMessage("New Patient", true);
+                // first call to webhook with step "start" and action new_patient
+                currentStep = "start";
+                accumulatedData = {};
+                sendToWebhook("new_patient", null);
+                // remove the static buttons to avoid double interaction
+                const btnGroup = document.getElementById('initialButtons');
+                if (btnGroup) btnGroup.style.display = 'none';
+            });
+        }
+        if (existingBtn) {
+            existingBtn.addEventListener('click', () => {
+                addUserMessage("Existing Patient", true);
+                currentStep = "start";
+                accumulatedData = {};
+                sendToWebhook("existing_patient", null);
+                const btnGroup = document.getElementById('initialButtons');
+                if (btnGroup) btnGroup.style.display = 'none';
+            });
+        }
+    }
+    
+    // Edge case: if user starts and no webhook yet, but still we need to handle fallback
+    // We also provide a demo inline in case n8n endpoint is not configured.
+    // For seamless demo, we can add a simulated mode for testing design? But we require real n8n.
+    // To improve UX, we inform user to set correct URL.
+    if (N8N_WEBHOOK_URL === "https://your-n8n-instance.com/webhook/chat") {
+        console.warn("⚠️ Please update N8N_WEBHOOK_URL variable with your actual n8n webhook endpoint.");
+        // optional: add a small note in chat (non-intrusive)
+        setTimeout(() => {
+            const note = document.createElement('div');
+            note.classList.add('message', 'bot-message');
+            note.innerHTML = `<div class="bubble" style="background:#fff3e0;">🔧 Demo mode: Connect your n8n webhook URL in the script.<br>Edit <strong>N8N_WEBHOOK_URL</strong> inside the HTML.</div>`;
+            chatContainer.appendChild(note);
+            scrollToBottom();
+        }, 500);
+    }
+    
+    bindStaticInitialButtons();
+    
+    // In case n8n expects a 'reset' or a fresh conversation, also provide reset via local storage reload?
+    // For completeness, we also handle session reset if needed.
+    
+    // Add a friendly dental fact after a few seconds? Not needed, but nice.
+    // Also, to make sure that if the webhook response expects input field, we manage focus.
+    // Perfect
+</script>
+</body>
+</html>
