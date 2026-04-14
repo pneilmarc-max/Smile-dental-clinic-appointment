@@ -50,7 +50,7 @@
 
         /* header with dental branding */
         .chat-header {
-            background: #1e6f5c;  /* fresh dental teal */
+            background: #1e6f5c;
             background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%);
             padding: 20px 24px;
             color: white;
@@ -160,8 +160,13 @@
         .chat-btn:active {
             transform: translateY(1px);
         }
+        .chat-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-        /* input area (for text prompts) */
+        /* input area - ALWAYS VISIBLE but conditionally enabled */
         .input-area {
             padding: 16px 20px 24px;
             background: white;
@@ -184,6 +189,11 @@
             border-color: #1e6f5c;
             box-shadow: 0 0 0 2px rgba(30,111,92,0.2);
         }
+        .input-field:disabled {
+            background: #f5f7fa;
+            color: #8b9aaa;
+            cursor: not-allowed;
+        }
         .send-btn {
             background: #1e6f5c;
             border: none;
@@ -198,7 +208,12 @@
             align-items: center;
             justify-content: center;
         }
-        .send-btn:hover {
+        .send-btn:disabled {
+            background: #b0c4ce;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .send-btn:hover:not(:disabled) {
             background: #0f5545;
             transform: scale(0.96);
         }
@@ -278,9 +293,10 @@
         </div>
     </div>
 
-    <div class="input-area" id="inputArea" style="display: none;">
-        <input type="text" id="userInput" class="input-field" placeholder="Type your answer..." autocomplete="off">
-        <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+    <!-- Input area - always visible, but conditionally enabled -->
+    <div class="input-area" id="inputArea">
+        <input type="text" id="userInput" class="input-field" placeholder="Type your answer..." autocomplete="off" disabled>
+        <button id="sendBtn" class="send-btn" disabled><i class="fas fa-paper-plane"></i></button>
     </div>
     <footer>⭐ Secure &nbsp;|&nbsp; Powered by n8n webhook</footer>
 </div>
@@ -299,14 +315,26 @@
     
     let currentStep = "start";          // step from backend response
     let accumulatedData = {};            // stores name, phone, email, etc.
-    let waitingForInput = false;         // if true, input field visible; else buttons mode
-    let currentButtons = [];              // store latest buttons from backend
+    let waitingForInput = false;         // if true, input field enabled; else disabled with buttons
     
     // DOM elements
     const chatContainer = document.getElementById('chatMessages');
-    const inputArea = document.getElementById('inputArea');
     const userInputField = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
+    
+    // Helper: enable/disable input based on waitingForInput flag
+    function setInputEnabled(enabled) {
+        if (enabled) {
+            userInputField.disabled = false;
+            sendBtn.disabled = false;
+            userInputField.placeholder = "Type your answer...";
+            userInputField.focus();
+        } else {
+            userInputField.disabled = true;
+            sendBtn.disabled = true;
+            userInputField.placeholder = "Please use the buttons above";
+        }
+    }
     
     // Helper: scroll to bottom
     function scrollToBottom() {
@@ -349,6 +377,7 @@
                 button.setAttribute('data-value', btn.value);
                 button.addEventListener('click', () => {
                     // user clicked a button: send action to n8n
+                    addUserMessage(btn.text, true);
                     sendToWebhook(btn.value, null);
                 });
                 btnGroup.appendChild(button);
@@ -381,7 +410,6 @@
         // Handle case when user provides text input (input field)
         if (textInput !== null && waitingForInput) {
             // determine which field we are collecting based on currentStep from backend
-            // The step could be like "newPatient.name" -> we store in data.name
             if (currentStep === "newPatient.name") {
                 updatedData.name = textInput;
             } else if (currentStep === "newPatient.phone") {
@@ -404,8 +432,11 @@
                 // fallback: generic field
                 updatedData.customInput = textInput;
             }
-            // after collecting, we send the request with action = null or maybe the step itself
             payloadAction = null;
+        } else if (textInput !== null && !waitingForInput) {
+            // User typed but buttons are shown: ignore or show a gentle reminder
+            addBotMessage("🔘 Please use the buttons above to continue, or start over if needed.", []);
+            return;
         }
         
         // Build request body
@@ -416,14 +447,9 @@
             data: updatedData
         };
         
-        // if there's a text input and waiting, we also need to pass the step accordingly.
-        if (textInput !== null && waitingForInput) {
-            // ensure step remains as the field collection step, we keep same step
-            // n8n will read data and decide to go to next step.
-        }
-        
-        // Show typing indicator
+        // Show typing indicator and disable input during request
         showTyping();
+        setInputEnabled(false);  // temporarily disable while waiting for response
         
         try {
             const response = await fetch(N8N_WEBHOOK_URL, {
@@ -443,34 +469,26 @@
             if (data && Object.keys(data).length) {
                 accumulatedData = { ...accumulatedData, ...data };
             } else {
-                // if n8n does not send data, keep our updatedData
                 accumulatedData = updatedData;
             }
             
             // Update conversation state
             currentStep = nextStep || "start";
-            currentButtons = buttons;
             
             // Display bot message
             addBotMessage(text, buttons);
             
-            // Determine UI mode: if buttons exist and are not empty, we show buttons & hide input field
+            // Determine UI mode: if buttons exist and are not empty, we show buttons & disable input
             if (buttons && buttons.length > 0) {
                 waitingForInput = false;
-                inputArea.style.display = "none";
-                // clear any pending input
-                userInputField.value = "";
+                setInputEnabled(false);
             } else {
                 // no buttons -> need text input
                 waitingForInput = true;
-                inputArea.style.display = "flex";
-                userInputField.value = "";
-                userInputField.focus();
-                // Also store what kind of field we are expecting (step helps)
-                // no further action required
+                setInputEnabled(true);
             }
             
-            // if the conversation ended (start over or reset), we might reset accumulatedData partially?
+            // if the conversation ended (start over or reset), reset accumulated data
             if (nextStep === "start" && text.includes("Start Over")) {
                 accumulatedData = {};
             }
@@ -479,27 +497,24 @@
             hideTyping();
             console.error("n8n webhook error:", error);
             addBotMessage("⚠️ Sorry, the scheduling service is temporarily unavailable. Please try again later or call the clinic directly. (Check n8n webhook URL)", []);
-            // fallback: show retry?
             waitingForInput = false;
-            inputArea.style.display = "none";
+            setInputEnabled(false);
         }
     }
     
     // Handle user clicks on dynamic buttons (global listener)
     function handleDynamicButtons() {
         document.querySelectorAll('.chat-btn').forEach(btn => {
-            // avoid duplicate listeners
             if (btn.getAttribute('data-listener') === 'true') return;
             btn.setAttribute('data-listener', 'true');
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const actionVal = btn.getAttribute('data-value') || btn.innerText;
-                // For procedure type or appointment selection, action = value
-                // Add user message to chat showing what they clicked
+                // Add user message showing what they clicked (only if not already added by caller)
+                // We'll add inside the click to ensure it's recorded
                 addUserMessage(btn.innerText, true);
-                // disable input mode temporarily while processing
-                if (waitingForInput) waitingForInput = false;
-                inputArea.style.display = "none";
+                // Disable input while processing button action
+                setInputEnabled(false);
                 sendToWebhook(actionVal, null);
             });
         });
@@ -517,29 +532,26 @@
         if (!rawText) return;
         addUserMessage(rawText, false);
         userInputField.value = "";
-        // send to webhook as text input
+        // Disable input while processing
+        setInputEnabled(false);
         sendToWebhook(null, rawText);
     }
     
     sendBtn.addEventListener('click', sendTextInput);
     userInputField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendTextInput();
+        if (e.key === 'Enter' && !userInputField.disabled) sendTextInput();
     });
     
-    // ------------- INITIAL SETUP: override the start step with a conversation starter ----------
-    // We already have initial message and buttons in static HTML, but we must tie them to the n8n logic.
-    // Replace static buttons with dynamic ones that call webhook.
+    // Bind static initial buttons (the first welcome message)
     function bindStaticInitialButtons() {
         const newBtn = document.querySelector('#initialButtons .chat-btn[data-action="new_patient"]');
         const existingBtn = document.querySelector('#initialButtons .chat-btn[data-action="existing_patient"]');
         if (newBtn) {
             newBtn.addEventListener('click', () => {
                 addUserMessage("New Patient", true);
-                // first call to webhook with step "start" and action new_patient
                 currentStep = "start";
                 accumulatedData = {};
                 sendToWebhook("new_patient", null);
-                // remove the static buttons to avoid double interaction
                 const btnGroup = document.getElementById('initialButtons');
                 if (btnGroup) btnGroup.style.display = 'none';
             });
@@ -556,13 +568,9 @@
         }
     }
     
-    // Edge case: if user starts and no webhook yet, but still we need to handle fallback
-    // We also provide a demo inline in case n8n endpoint is not configured.
-    // For seamless demo, we can add a simulated mode for testing design? But we require real n8n.
-    // To improve UX, we inform user to set correct URL.
+    // Warn if webhook URL not configured
     if (N8N_WEBHOOK_URL === "https://your-n8n-instance.com/webhook/chat") {
         console.warn("⚠️ Please update N8N_WEBHOOK_URL variable with your actual n8n webhook endpoint.");
-        // optional: add a small note in chat (non-intrusive)
         setTimeout(() => {
             const note = document.createElement('div');
             note.classList.add('message', 'bot-message');
@@ -573,13 +581,9 @@
     }
     
     bindStaticInitialButtons();
-    
-    // In case n8n expects a 'reset' or a fresh conversation, also provide reset via local storage reload?
-    // For completeness, we also handle session reset if needed.
-    
-    // Add a friendly dental fact after a few seconds? Not needed, but nice.
-    // Also, to make sure that if the webhook response expects input field, we manage focus.
-    // Perfect
+    // Initially no waiting for input (buttons are shown), so input stays disabled
+    waitingForInput = false;
+    setInputEnabled(false);
 </script>
 </body>
 </html>
