@@ -62,7 +62,7 @@
         <div class="message bot-message">
             <div class="bubble">
                 👋 Welcome to Smile Dental Clinic! I'm your scheduling assistant.<br>
-                Would you like to book as a <strong>New Patient</strong>, manage an <strong>Existing Patient</strong> appointment, or send a <strong>General Inquiry</strong>?
+                Would you like to book as a <strong>New Patient</strong>, manage an <strong>Existing Patient</strong> appointment, or ask a <strong>General Inquiry</strong>?
             </div>
             <div class="button-group" id="initialButtons">
                 <button class="chat-btn" data-action="new_patient">🦷 New Patient</button>
@@ -81,8 +81,9 @@
 
 <script>
     // ------------------- CONFIGURATION -------------------
-    // REPLACE WITH YOUR ACTUAL N8N WEBHOOK URL
-    const N8N_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";  // <-- UPDATE THIS
+    // REPLACE WITH YOUR ACTUAL N8N WEBHOOK URLs
+    const APPOINTMENT_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";  // <-- UPDATE THIS (for appointments)
+    const RAG_WEBHOOK_URL = "https://your-n8n-rag-endpoint.com/webhook/rag";  // <-- UPDATE THIS (for RAG Q&A)
     
     // Session handling
     let sessionId = localStorage.getItem('smile_sessionId');
@@ -92,34 +93,34 @@
     }
 
     // ---------- LOCAL FLOW STATE ----------
-    // Steps for appointment flow:
     // 'initial'                 → waiting for New/Existing patient or General Inquiry
     // 'booking_type'            → waiting for New Booking or Existing Booking
     // 'procedure'               → waiting for procedure selection
-    // 'collecting_name'         → waiting for full name input (appointment or inquiry)
+    // 'collecting_name'         → waiting for full name input (appointment)
     // 'collecting_phone'        → waiting for phone input
-    // 'collecting_email'        → waiting for email input (appointment or inquiry)
+    // 'collecting_email'        → waiting for email input
     // 'collecting_datetime'     → waiting for date & time input
     // 'collecting_comm_pref'    → waiting for communication preference (buttons)
-    // 'collecting_message'      → waiting for inquiry message
+    // 'rag_question'            → waiting for user to type a question (RAG)
+    // 'rag_followup'            → after RAG answer, waiting for "Ask another" or "Back to menu"
     // 'completed'               → all done
     let currentLocalStep = 'initial';
     
     // Accumulated appointment data
     let appointmentData = {
-        patientType: '',        // 'new_patient', 'existing_patient', or 'general_inquiry'
-        bookingType: '',        // 'new_booking' or 'existing_booking'
+        patientType: '',
+        bookingType: '',
         procedure: '',
         name: '',
         phone: '',
         email: '',
         datetime: '',
-        preferredCommunication: '',
-        message: ''             // for general inquiry
+        preferredCommunication: ''
     };
 
-    // Flag to differentiate between appointment flow and inquiry flow
-    let isInquiryFlow = false;
+    // Flag to differentiate flows
+    let isRagFlow = false;
+    let isAppointmentFlow = false;
 
     // DOM elements
     const chatContainer = document.getElementById('chatMessages');
@@ -182,13 +183,27 @@
         const typing = document.createElement('div');
         typing.classList.add('message', 'bot-message');
         typing.id = 'typingIndicator';
-        typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Processing...</div>`;
+        typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Thinking...</div>`;
         chatContainer.appendChild(typing);
         scrollToBottom();
     }
     function hideTyping() {
         const t = document.getElementById('typingIndicator');
         if (t) t.remove();
+    }
+
+    // Reset to initial welcome state (shows main buttons)
+    function resetToMainMenu() {
+        currentLocalStep = 'initial';
+        isRagFlow = false;
+        isAppointmentFlow = false;
+        appointmentData = {
+            patientType: '', bookingType: '', procedure: '', name: '',
+            phone: '', email: '', datetime: '', preferredCommunication: ''
+        };
+        // Show the initial buttons again
+        document.getElementById('initialButtons').style.display = 'flex';
+        setInputEnabled(false);
     }
 
     // ---------- OPTIONS ----------
@@ -210,19 +225,26 @@
         { text: '📧 Email', value: 'Email' }
     ];
 
+    const ragFollowUpOptions = [
+        { text: '🔄 Ask another question', value: 'ask_another' },
+        { text: '🏠 Back to main menu', value: 'main_menu' }
+    ];
+
     // ---------- HANDLE BUTTON CLICKS ----------
     function handleButtonClick(value) {
         if (currentLocalStep === 'initial') {
-            // Patient type choice: new_patient, existing_patient, or general_inquiry
             appointmentData.patientType = value;
+            document.getElementById('initialButtons').style.display = 'none';
             
             if (value === 'general_inquiry') {
-                isInquiryFlow = true;
-                currentLocalStep = 'collecting_name';
-                addBotMessage("📝 Please enter your **full name**:", []);
+                isRagFlow = true;
+                isAppointmentFlow = false;
+                currentLocalStep = 'rag_question';
+                addBotMessage("💡 I'm here to answer your questions about our clinic, services, hours, and more!<br><br>What would you like to know? Type your question below.", []);
                 setInputEnabled(true);
             } else {
-                isInquiryFlow = false;
+                isRagFlow = false;
+                isAppointmentFlow = true;
                 currentLocalStep = 'booking_type';
                 addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
                 setInputEnabled(false);
@@ -242,7 +264,27 @@
         }
         else if (currentLocalStep === 'collecting_comm_pref') {
             appointmentData.preferredCommunication = value;
-            submitToWebhook();
+            submitAppointmentToWebhook();
+        }
+        else if (currentLocalStep === 'rag_followup') {
+            if (value === 'ask_another') {
+                currentLocalStep = 'rag_question';
+                addBotMessage("Sure! What else would you like to know?", []);
+                setInputEnabled(true);
+            } else if (value === 'main_menu') {
+                resetToMainMenu();
+                // Re-show welcome message with buttons
+                addBotMessage("👋 Welcome back! What would you like to do?", [
+                    { text: '🦷 New Patient', value: 'new_patient' },
+                    { text: '📋 Existing Patient', value: 'existing_patient' },
+                    { text: '💬 General Inquiry', value: 'general_inquiry' }
+                ]);
+                // Re-bind these new buttons via the global handler? 
+                // The addBotMessage already attaches listeners; we need to ensure they work.
+                // The resetToMainMenu hides the original initialButtons div, but we added new buttons.
+                // We also need to hide the original static button group.
+                document.getElementById('initialButtons').style.display = 'none';
+            }
         }
     }
 
@@ -255,30 +297,11 @@
         userInputField.value = '';
         setInputEnabled(false);
 
-        if (isInquiryFlow) {
-            // Inquiry flow: name → email → message
-            switch (currentLocalStep) {
-                case 'collecting_name':
-                    appointmentData.name = rawText;
-                    currentLocalStep = 'collecting_email';
-                    addBotMessage("📧 Please provide your **email address** so we can respond:", []);
-                    setInputEnabled(true);
-                    break;
-                case 'collecting_email':
-                    appointmentData.email = rawText;
-                    currentLocalStep = 'collecting_message';
-                    addBotMessage("💬 Please type your **inquiry or message**:", []);
-                    setInputEnabled(true);
-                    break;
-                case 'collecting_message':
-                    appointmentData.message = rawText;
-                    submitToWebhook();
-                    break;
-                default:
-                    addBotMessage("Please use the buttons to continue.", []);
-                    setInputEnabled(false);
-            }
-        } else {
+        if (isRagFlow && currentLocalStep === 'rag_question') {
+            // Send question to RAG webhook
+            sendToRagWebhook(rawText);
+        }
+        else if (isAppointmentFlow) {
             // Appointment flow: name → phone → email → datetime → comm pref
             switch (currentLocalStep) {
                 case 'collecting_name':
@@ -309,48 +332,25 @@
                     addBotMessage("Please use the buttons to continue.", []);
                     setInputEnabled(false);
             }
+        } else {
+            // Fallback
+            addBotMessage("I didn't understand that. Let's start over.", []);
+            resetToMainMenu();
         }
     }
 
-    // ---------- SUBMIT TO WEBHOOK ----------
-    async function submitToWebhook() {
+    // ---------- SEND QUESTION TO RAG WEBHOOK ----------
+    async function sendToRagWebhook(question) {
         showTyping();
         setInputEnabled(false);
-        currentLocalStep = 'completed';
 
-        let payload;
-        if (isInquiryFlow) {
-            payload = {
-                sessionId: sessionId,
-                action: "submit_inquiry",
-                data: {
-                    patientType: appointmentData.patientType,
-                    name: appointmentData.name,
-                    email: appointmentData.email,
-                    message: appointmentData.message,
-                    status: "inquiry"
-                }
-            };
-        } else {
-            payload = {
-                sessionId: sessionId,
-                action: "submit_appointment",
-                data: {
-                    patientType: appointmentData.patientType,
-                    bookingType: appointmentData.bookingType,
-                    procedure: appointmentData.procedure,
-                    name: appointmentData.name,
-                    phone: appointmentData.phone,
-                    email: appointmentData.email,
-                    datetime: appointmentData.datetime,
-                    preferredCommunication: appointmentData.preferredCommunication,
-                    status: "confirmed"
-                }
-            };
-        }
+        const payload = {
+            sessionId: sessionId,
+            question: question
+        };
 
         try {
-            const response = await fetch(N8N_WEBHOOK_URL, {
+            const response = await fetch(RAG_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -360,11 +360,54 @@
             
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
-            if (isInquiryFlow) {
-                addBotMessage("✅ Thank you for your inquiry! We'll get back to you via email within 1–2 business days. 😊", []);
-            } else {
-                addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via your preferred method. Have a great day! 😊", []);
+            const result = await response.json();
+            // Expecting { answer: "..." } or similar
+            const answer = result.answer || "I'm sorry, I couldn't find an answer to that question. Please try rephrasing or contact the clinic directly.";
+            
+            addBotMessage(answer);
+            
+            // Ask follow-up
+            currentLocalStep = 'rag_followup';
+            addBotMessage("Would you like to ask another question or return to the main menu?", ragFollowUpOptions);
+            setInputEnabled(false);
+            
+        } catch (error) {
+            hideTyping();
+            console.error("RAG webhook error:", error);
+            addBotMessage("⚠️ Sorry, I'm having trouble answering questions right now. Please try again later or call the clinic directly.", []);
+            currentLocalStep = 'rag_followup';
+            addBotMessage("Would you like to try asking again or go back to the main menu?", ragFollowUpOptions);
+            setInputEnabled(false);
+        }
+    }
+
+    // ---------- SUBMIT APPOINTMENT TO WEBHOOK ----------
+    async function submitAppointmentToWebhook() {
+        showTyping();
+        setInputEnabled(false);
+        currentLocalStep = 'completed';
+
+        const payload = {
+            sessionId: sessionId,
+            action: "submit_appointment",
+            data: {
+                ...appointmentData,
+                status: "confirmed"
             }
+        };
+
+        try {
+            const response = await fetch(APPOINTMENT_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            hideTyping();
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via your preferred method. Have a great day! 😊", []);
             
             addBotMessage("Would you like to start over?", [
                 { text: "🔄 Start Over", value: "restart" }
@@ -378,7 +421,7 @@
             
         } catch (error) {
             hideTyping();
-            console.error("Webhook error:", error);
+            console.error("Appointment webhook error:", error);
             addBotMessage("⚠️ Sorry, we couldn't process your request. Please try again or call the clinic directly.", []);
         }
     }
@@ -395,12 +438,14 @@
             document.getElementById('initialButtons').style.display = 'none';
             
             if (type === 'general_inquiry') {
-                isInquiryFlow = true;
-                currentLocalStep = 'collecting_name';
-                addBotMessage("📝 Please enter your **full name**:", []);
+                isRagFlow = true;
+                isAppointmentFlow = false;
+                currentLocalStep = 'rag_question';
+                addBotMessage("💡 I'm here to answer your questions about our clinic, services, hours, and more!<br><br>What would you like to know? Type your question below.", []);
                 setInputEnabled(true);
             } else {
-                isInquiryFlow = false;
+                isRagFlow = false;
+                isAppointmentFlow = true;
                 currentLocalStep = 'booking_type';
                 addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
                 setInputEnabled(false);
@@ -411,6 +456,33 @@
         if (existBtn) existBtn.addEventListener('click', () => handleInitialClick('existing_patient', 'Existing Patient'));
         if (inquiryBtn) inquiryBtn.addEventListener('click', () => handleInitialClick('general_inquiry', 'General Inquiry'));
     }
+
+    // Global listener for dynamically added buttons (like main menu after RAG)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('chat-btn')) {
+            const value = e.target.getAttribute('data-value');
+            if (value === 'new_patient' || value === 'existing_patient' || value === 'general_inquiry') {
+                if (currentLocalStep === 'initial' || currentLocalStep === 'rag_followup') {
+                    // Handle main menu selection from dynamically added buttons
+                    addUserMessage(e.target.innerText, true);
+                    appointmentData.patientType = value;
+                    if (value === 'general_inquiry') {
+                        isRagFlow = true;
+                        isAppointmentFlow = false;
+                        currentLocalStep = 'rag_question';
+                        addBotMessage("💡 I'm here to answer your questions about our clinic, services, hours, and more!<br><br>What would you like to know? Type your question below.", []);
+                        setInputEnabled(true);
+                    } else {
+                        isRagFlow = false;
+                        isAppointmentFlow = true;
+                        currentLocalStep = 'booking_type';
+                        addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
+                        setInputEnabled(false);
+                    }
+                }
+            }
+        }
+    });
 
     // ---------- SEND BUTTON & ENTER ----------
     sendBtn.addEventListener('click', handleTextInput);
