@@ -8,271 +8,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(145deg, #e0f2fe 0%, #b9e0f5 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-        }
-
-        /* dental pattern overlay (subtle tooth pattern) */
-        body::before {
-            content: "🦷";
-            font-size: 140px;
-            opacity: 0.05;
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            pointer-events: none;
-            transform: rotate(-10deg);
-        }
-
-        /* main chat container */
-        .chat-container {
-            width: 100%;
-            max-width: 550px;
-            background: white;
-            border-radius: 40px;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.4);
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-
-        /* header with dental branding */
-        .chat-header {
-            background: #1e6f5c;
-            background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%);
-            padding: 20px 24px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border-bottom: 2px solid #ffd966;
-        }
-        .header-icon {
-            background: white;
-            width: 52px;
-            height: 52px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            color: #1e6f5c;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        .header-text h1 {
-            font-size: 1.65rem;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-        }
-        .header-text p {
-            font-size: 0.8rem;
-            opacity: 0.9;
-            font-weight: 500;
-            margin-top: 4px;
-        }
-
-        /* messages area */
-        .chat-messages {
-            height: 450px;
-            overflow-y: auto;
-            padding: 20px 18px;
-            background: #fefdf8;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        /* message bubbles */
-        .message {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
-            animation: fadeInUp 0.2s ease;
-        }
-        .bot-message {
-            align-self: flex-start;
-        }
-        .user-message {
-            align-self: flex-end;
-        }
-        .bubble {
-            padding: 12px 18px;
-            border-radius: 24px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
-        }
-        .bot-message .bubble {
-            background: #eef2f5;
-            color: #1e2a32;
-            border-bottom-left-radius: 6px;
-        }
-        .user-message .bubble {
-            background: #1e6f5c;
-            color: white;
-            border-bottom-right-radius: 6px;
-        }
-        .message-time {
-            font-size: 0.7rem;
-            margin-top: 5px;
-            margin-left: 12px;
-            margin-right: 12px;
-            color: #6c7a89;
-        }
-
-        /* button group inside messages */
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 12px;
-        }
-        .chat-btn {
-            background: white;
-            border: 1.5px solid #cbdde6;
-            padding: 8px 18px;
-            border-radius: 60px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #1e6f5c;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .chat-btn:hover {
-            background: #e0f2e9;
-            border-color: #1e6f5c;
-            transform: translateY(-1px);
-        }
-        .chat-btn:active {
-            transform: translateY(1px);
-        }
-        .chat-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* input area - ALWAYS VISIBLE but conditionally enabled */
-        .input-area {
-            padding: 16px 20px 24px;
-            background: white;
-            border-top: 1px solid #e9edf2;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .input-field {
-            flex: 1;
-            padding: 12px 18px;
-            border-radius: 60px;
-            border: 1px solid #cfdfe8;
-            font-size: 0.95rem;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            transition: 0.2s;
-        }
-        .input-field:focus {
-            border-color: #1e6f5c;
-            box-shadow: 0 0 0 2px rgba(30,111,92,0.2);
-        }
-        .input-field:disabled {
-            background: #f5f7fa;
-            color: #8b9aaa;
-            cursor: not-allowed;
-        }
-        .send-btn {
-            background: #1e6f5c;
-            border: none;
-            color: white;
-            width: 48px;
-            height: 48px;
-            border-radius: 60px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .send-btn:disabled {
-            background: #b0c4ce;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .send-btn:hover:not(:disabled) {
-            background: #0f5545;
-            transform: scale(0.96);
-        }
-        .typing-indicator {
-            font-size: 0.8rem;
-            color: #6b7b8c;
-            padding: 8px 12px;
-            background: #eef2f5;
-            width: fit-content;
-            border-radius: 30px;
-            margin-top: 6px;
-        }
-
-        /* small loader */
-        .loader-dots {
-            display: inline-flex;
-            gap: 4px;
-        }
-        .loader-dots span {
-            width: 6px;
-            height: 6px;
-            background: #6b7b8c;
-            border-radius: 50%;
-            animation: blink 1.4s infinite;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        footer {
-            font-size: 0.7rem;
-            text-align: center;
-            padding: 10px;
-            background: #f7f9fc;
-            color: #7a8b9b;
-            border-top: 1px solid #e2e8f0;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e9edf2;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #b9cfdf;
-            border-radius: 8px;
-        }
+        /* (Keep all existing CSS unchanged) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(145deg, #e0f2fe 0%, #b9e0f5 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        body::before { content: "🦷"; font-size: 140px; opacity: 0.05; position: absolute; bottom: 20px; right: 20px; pointer-events: none; transform: rotate(-10deg); }
+        .chat-container { width: 100%; max-width: 550px; background: white; border-radius: 40px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.4); overflow: hidden; transition: all 0.2s ease; }
+        .chat-header { background: #1e6f5c; background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%); padding: 20px 24px; color: white; display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #ffd966; }
+        .header-icon { background: white; width: 52px; height: 52px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #1e6f5c; box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .header-text h1 { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.3px; }
+        .header-text p { font-size: 0.8rem; opacity: 0.9; font-weight: 500; margin-top: 4px; }
+        .chat-messages { height: 450px; overflow-y: auto; padding: 20px 18px; background: #fefdf8; display: flex; flex-direction: column; gap: 16px; }
+        .message { display: flex; flex-direction: column; max-width: 85%; animation: fadeInUp 0.2s ease; }
+        .bot-message { align-self: flex-start; }
+        .user-message { align-self: flex-end; }
+        .bubble { padding: 12px 18px; border-radius: 24px; font-size: 0.95rem; line-height: 1.4; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+        .bot-message .bubble { background: #eef2f5; color: #1e2a32; border-bottom-left-radius: 6px; }
+        .user-message .bubble { background: #1e6f5c; color: white; border-bottom-right-radius: 6px; }
+        .message-time { font-size: 0.7rem; margin-top: 5px; margin-left: 12px; margin-right: 12px; color: #6c7a89; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .chat-btn { background: white; border: 1.5px solid #cbdde6; padding: 8px 18px; border-radius: 60px; font-size: 0.85rem; font-weight: 600; color: #1e6f5c; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-btn:hover { background: #e0f2e9; border-color: #1e6f5c; transform: translateY(-1px); }
+        .chat-btn:active { transform: translateY(1px); }
+        .chat-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .input-area { padding: 16px 20px 24px; background: white; border-top: 1px solid #e9edf2; display: flex; gap: 12px; align-items: center; }
+        .input-field { flex: 1; padding: 12px 18px; border-radius: 60px; border: 1px solid #cfdfe8; font-size: 0.95rem; font-family: 'Inter', sans-serif; outline: none; transition: 0.2s; }
+        .input-field:focus { border-color: #1e6f5c; box-shadow: 0 0 0 2px rgba(30,111,92,0.2); }
+        .input-field:disabled { background: #f5f7fa; color: #8b9aaa; cursor: not-allowed; }
+        .send-btn { background: #1e6f5c; border: none; color: white; width: 48px; height: 48px; border-radius: 60px; cursor: pointer; font-size: 1.2rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .send-btn:disabled { background: #b0c4ce; cursor: not-allowed; transform: none; }
+        .send-btn:hover:not(:disabled) { background: #0f5545; transform: scale(0.96); }
+        .typing-indicator { font-size: 0.8rem; color: #6b7b8c; padding: 8px 12px; background: #eef2f5; width: fit-content; border-radius: 30px; margin-top: 6px; }
+        .loader-dots { display: inline-flex; gap: 4px; }
+        .loader-dots span { width: 6px; height: 6px; background: #6b7b8c; border-radius: 50%; animation: blink 1.4s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        footer { font-size: 0.7rem; text-align: center; padding: 10px; background: #f7f9fc; color: #7a8b9b; border-top: 1px solid #e2e8f0; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #e9edf2; }
+        ::-webkit-scrollbar-thumb { background: #b9cfdf; border-radius: 8px; }
     </style>
 </head>
 <body>
 <div class="chat-container">
     <div class="chat-header">
-        <div class="header-icon">
-            <i class="fas fa-tooth"></i>
-        </div>
+        <div class="header-icon"><i class="fas fa-tooth"></i></div>
         <div class="header-text">
             <h1>Smile Dental Clinic</h1>
             <p>✨ Smart scheduling • gentle care</p>
@@ -280,7 +59,7 @@
     </div>
 
     <div class="chat-messages" id="chatMessages">
-        <!-- messages will be injected here -->
+        <!-- Welcome message with initial choice buttons -->
         <div class="message bot-message">
             <div class="bubble">
                 👋 Welcome to Smile Dental Clinic! I'm your scheduling assistant.<br>
@@ -293,7 +72,6 @@
         </div>
     </div>
 
-    <!-- Input area - always visible, but conditionally enabled -->
     <div class="input-area" id="inputArea">
         <input type="text" id="userInput" class="input-field" placeholder="Type your answer..." autocomplete="off" disabled>
         <button id="sendBtn" class="send-btn" disabled><i class="fas fa-paper-plane"></i></button>
@@ -303,71 +81,63 @@
 
 <script>
     // ------------------- CONFIGURATION -------------------
-    // REPLACE WITH YOUR ACTUAL N8N WEBHOOK URL (Vercel or n8n endpoint)
+    // REPLACE WITH YOUR ACTUAL N8N WEBHOOK URL
     const N8N_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";  // <-- UPDATE THIS
     
-    // In-memory state for the conversation (matches n8n required fields)
+    // Session handling
     let sessionId = localStorage.getItem('smile_sessionId');
     if (!sessionId) {
         sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
         localStorage.setItem('smile_sessionId', sessionId);
     }
+
+    // ---------- LOCAL FLOW STATE ----------
+    // Possible steps: 
+    // 'initial'           → waiting for New/Existing choice
+    // 'procedure'         → waiting for procedure selection
+    // 'collecting_name'   → waiting for full name input
+    // 'collecting_phone'  → waiting for phone input
+    // 'collecting_email'  → waiting for email input
+    // 'collecting_datetime' → waiting for date & time input
+    // 'completed'         → all done, disable further input
+    let currentLocalStep = 'initial';
     
-    let currentStep = "start";          // step from backend response
-    let accumulatedData = {};            // stores name, phone, email, etc.
-    let waitingForInput = false;         // if true, input field enabled; else disabled with buttons
-    
+    // Accumulated appointment data
+    let appointmentData = {
+        patientType: '',     // 'new' or 'existing'
+        procedure: '',
+        name: '',
+        phone: '',
+        email: '',
+        datetime: ''
+    };
+
     // DOM elements
     const chatContainer = document.getElementById('chatMessages');
     const userInputField = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
-    
-    // Helper: enable/disable input based on waitingForInput flag
+
+    // ---------- UI HELPERS ----------
     function setInputEnabled(enabled) {
-        if (enabled) {
-            userInputField.disabled = false;
-            sendBtn.disabled = false;
-            userInputField.placeholder = "Type your answer...";
-            userInputField.focus();
-        } else {
-            userInputField.disabled = true;
-            sendBtn.disabled = true;
-            userInputField.placeholder = "Please use the buttons above";
-        }
+        userInputField.disabled = !enabled;
+        sendBtn.disabled = !enabled;
+        userInputField.placeholder = enabled ? "Type your answer..." : "Please use the buttons above";
+        if (enabled) userInputField.focus();
     }
-    
-    // Helper: scroll to bottom
+
     function scrollToBottom() {
-        const container = document.getElementById('chatMessages');
-        container.scrollTop = container.scrollHeight;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-    
-    // Helper: show typing indicator (bot thinking)
-    let typingDiv = null;
-    function showTyping() {
-        hideTyping();
-        const typingElement = document.createElement('div');
-        typingElement.classList.add('message', 'bot-message');
-        typingElement.id = 'typingIndicator';
-        typingElement.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Thinking...</div>`;
-        chatContainer.appendChild(typingElement);
-        scrollToBottom();
-    }
-    function hideTyping() {
-        const existing = document.getElementById('typingIndicator');
-        if (existing) existing.remove();
-    }
-    
-    // Add a bot message (text only, optional buttons)
+
     function addBotMessage(text, buttons = []) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', 'bot-message');
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', 'bot-message');
         const bubble = document.createElement('div');
         bubble.classList.add('bubble');
         bubble.innerHTML = text.replace(/\n/g, '<br>');
-        messageDiv.appendChild(bubble);
+        msgDiv.appendChild(bubble);
         
-        if (buttons && buttons.length > 0) {
+        if (buttons.length) {
             const btnGroup = document.createElement('div');
             btnGroup.classList.add('button-group');
             buttons.forEach(btn => {
@@ -376,200 +146,196 @@
                 button.innerText = btn.text;
                 button.setAttribute('data-value', btn.value);
                 button.addEventListener('click', () => {
-                    // user clicked a button: send action to n8n
                     addUserMessage(btn.text, true);
-                    sendToWebhook(btn.value, null);
+                    handleButtonClick(btn.value);
                 });
                 btnGroup.appendChild(button);
             });
-            messageDiv.appendChild(btnGroup);
+            msgDiv.appendChild(btnGroup);
         }
-        chatContainer.appendChild(messageDiv);
+        chatContainer.appendChild(msgDiv);
         scrollToBottom();
     }
-    
-    // Add a user message (what they typed or clicked)
-    function addUserMessage(content, isButtonClick = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', 'user-message');
+
+    function addUserMessage(content, isButton = false) {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', 'user-message');
         const bubble = document.createElement('div');
         bubble.classList.add('bubble');
         bubble.innerText = content;
-        messageDiv.appendChild(bubble);
-        chatContainer.appendChild(messageDiv);
+        msgDiv.appendChild(bubble);
+        chatContainer.appendChild(msgDiv);
         scrollToBottom();
     }
-    
-    // Send request to n8n webhook
-    async function sendToWebhook(actionValue, textInput = null) {
-        // actionValue: button payload (e.g. "new_patient", "confirm_cancel", appointmentId)
-        // textInput: if user typed something (for name, phone, etc.)
-        let payloadAction = actionValue;
-        let updatedData = { ...accumulatedData };
-        
-        // Handle case when user provides text input (input field)
-        if (textInput !== null && waitingForInput) {
-            // determine which field we are collecting based on currentStep from backend
-            if (currentStep === "newPatient.name") {
-                updatedData.name = textInput;
-            } else if (currentStep === "newPatient.phone") {
-                updatedData.phone = textInput;
-            } else if (currentStep === "newPatient.email") {
-                updatedData.email = textInput;
-            } else if (currentStep === "newPatient.procedure") {
-                updatedData.procedure = textInput;
-            } else if (currentStep === "newPatient.datetime") {
-                updatedData.datetime = textInput;
-            } else if (currentStep === "existingPatient.name") {
-                updatedData.name = textInput;
-            } else if (currentStep === "existingPatient.email") {
-                updatedData.email = textInput;
-            } else if (currentStep === "existingPatient.modifyNewDateTime") {
-                updatedData.newDatetime = textInput;
-            } else if (currentStep === "existingPatient.modifyNewProcedure") {
-                updatedData.newProcedure = textInput;
-            } else {
-                // fallback: generic field
-                updatedData.customInput = textInput;
-            }
-            payloadAction = null;
-        } else if (textInput !== null && !waitingForInput) {
-            // User typed but buttons are shown: ignore or show a gentle reminder
-            addBotMessage("🔘 Please use the buttons above to continue, or start over if needed.", []);
-            return;
+
+    // Show typing indicator while calling webhook (only used at final submission)
+    function showTyping() {
+        hideTyping();
+        const typing = document.createElement('div');
+        typing.classList.add('message', 'bot-message');
+        typing.id = 'typingIndicator';
+        typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Scheduling...</div>`;
+        chatContainer.appendChild(typing);
+        scrollToBottom();
+    }
+    function hideTyping() {
+        const t = document.getElementById('typingIndicator');
+        if (t) t.remove();
+    }
+
+    // ---------- PROCEDURE OPTIONS ----------
+    const procedureOptions = [
+        { text: '🪥 Routine cleaning / checkup', value: 'Routine cleaning / checkup' },
+        { text: '🚨 Emergency / dental pain', value: 'Emergency / dental pain' },
+        { text: '🦷 Consultation (Invisalign, Implants, etc.)', value: 'Consultation (Invisalign, Implants, etc.)' },
+        { text: '🔧 Filling or Tooth Repair', value: 'Filling or Tooth Repair' }
+    ];
+
+    // ---------- HANDLE BUTTON CLICKS BASED ON LOCAL STEP ----------
+    function handleButtonClick(value) {
+        if (currentLocalStep === 'initial') {
+            // New or Existing patient choice
+            appointmentData.patientType = value; // 'new_patient' or 'existing_patient'
+            currentLocalStep = 'procedure';
+            addBotMessage(
+                "Great! Please select the procedure you need:",
+                procedureOptions
+            );
+            setInputEnabled(false);
         }
-        
-        // Build request body
-        const requestBody = {
-            sessionId: sessionId,
-            step: currentStep,
-            action: payloadAction,
-            data: updatedData
-        };
-        
-        // Show typing indicator and disable input during request
+        else if (currentLocalStep === 'procedure') {
+            // Procedure selected
+            appointmentData.procedure = value;
+            currentLocalStep = 'collecting_name';
+            addBotMessage("📝 Please enter your **full name**:", []);
+            setInputEnabled(true);
+        }
+        // No other button-driven steps in this flow
+    }
+
+    // ---------- HANDLE TEXT INPUT ----------
+    function handleTextInput() {
+        const rawText = userInputField.value.trim();
+        if (!rawText) return;
+
+        addUserMessage(rawText, false);
+        userInputField.value = '';
+
+        // Disable input while processing to avoid double submission
+        setInputEnabled(false);
+
+        switch (currentLocalStep) {
+            case 'collecting_name':
+                appointmentData.name = rawText;
+                currentLocalStep = 'collecting_phone';
+                addBotMessage("📞 What is the best **phone number** to reach you?", []);
+                setInputEnabled(true);
+                break;
+            case 'collecting_phone':
+                appointmentData.phone = rawText;
+                currentLocalStep = 'collecting_email';
+                addBotMessage("📧 Please provide your **email address** for confirmation:", []);
+                setInputEnabled(true);
+                break;
+            case 'collecting_email':
+                appointmentData.email = rawText;
+                currentLocalStep = 'collecting_datetime';
+                addBotMessage("📅 When would you like to come in? Please provide **date and preferred time** (e.g., 'April 12, 10:30 AM'):", []);
+                setInputEnabled(true);
+                break;
+            case 'collecting_datetime':
+                appointmentData.datetime = rawText;
+                // All data collected → send to webhook
+                submitAppointmentToWebhook();
+                break;
+            default:
+                // If input received unexpectedly, just show a gentle message
+                addBotMessage("Please use the buttons to continue.", []);
+                setInputEnabled(false);
+        }
+    }
+
+    // ---------- FINAL SUBMISSION TO N8N ----------
+    async function submitAppointmentToWebhook() {
         showTyping();
-        setInputEnabled(false);  // temporarily disable while waiting for response
-        
+        setInputEnabled(false);
+        currentLocalStep = 'completed';
+
+        const payload = {
+            sessionId: sessionId,
+            action: "submit_appointment",   // your n8n workflow can recognize this
+            data: appointmentData
+        };
+
         try {
             const response = await fetch(N8N_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(payload)
             });
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const result = await response.json();
+
             hideTyping();
             
-            // expected fields from n8n: { nextStep, text, buttons, data? }
-            const { nextStep, text, buttons = [], data = {} } = result;
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
-            // Merge returned data (to keep patient info)
-            if (data && Object.keys(data).length) {
-                accumulatedData = { ...accumulatedData, ...data };
-            } else {
-                accumulatedData = updatedData;
-            }
+            // You may show a confirmation from n8n response or default message
+            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via email or phone. Have a great day! 😊", []);
             
-            // Update conversation state
-            currentStep = nextStep || "start";
+            // Optional: offer a "Start Over" button
+            addBotMessage("Would you like to book another appointment?", [
+                { text: "🔄 Start Over", value: "restart" }
+            ]);
             
-            // Display bot message
-            addBotMessage(text, buttons);
-            
-            // Determine UI mode: if buttons exist and are not empty, we show buttons & disable input
-            if (buttons && buttons.length > 0) {
-                waitingForInput = false;
-                setInputEnabled(false);
-            } else {
-                // no buttons -> need text input
-                waitingForInput = true;
-                setInputEnabled(true);
-            }
-            
-            // if the conversation ended (start over or reset), reset accumulated data
-            if (nextStep === "start" && text.includes("Start Over")) {
-                accumulatedData = {};
-            }
+            // Bind restart button manually (simple)
+            setTimeout(() => {
+                document.querySelectorAll('.chat-btn[data-value="restart"]').forEach(btn => {
+                    btn.addEventListener('click', () => location.reload());
+                });
+            }, 100);
             
         } catch (error) {
             hideTyping();
-            console.error("n8n webhook error:", error);
-            addBotMessage("⚠️ Sorry, the scheduling service is temporarily unavailable. Please try again later or call the clinic directly. (Check n8n webhook URL)", []);
-            waitingForInput = false;
-            setInputEnabled(false);
+            console.error("Webhook error:", error);
+            addBotMessage("⚠️ Sorry, we couldn't submit your request. Please try again or call the clinic directly.", []);
+            // Allow retry? For simplicity we can enable input but we're in completed state.
         }
     }
-    
-    // Handle user clicks on dynamic buttons (global listener)
-    function handleDynamicButtons() {
-        document.querySelectorAll('.chat-btn').forEach(btn => {
-            if (btn.getAttribute('data-listener') === 'true') return;
-            btn.setAttribute('data-listener', 'true');
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const actionVal = btn.getAttribute('data-value') || btn.innerText;
-                // Add user message showing what they clicked (only if not already added by caller)
-                // We'll add inside the click to ensure it's recorded
-                addUserMessage(btn.innerText, true);
-                // Disable input while processing button action
-                setInputEnabled(false);
-                sendToWebhook(actionVal, null);
-            });
-        });
-    }
-    
-    // observe new messages to attach button listeners
-    const observer = new MutationObserver(() => {
-        handleDynamicButtons();
-    });
-    observer.observe(chatContainer, { childList: true, subtree: true });
-    
-    // send text input from user
-    function sendTextInput() {
-        const rawText = userInputField.value.trim();
-        if (!rawText) return;
-        addUserMessage(rawText, false);
-        userInputField.value = "";
-        // Disable input while processing
-        setInputEnabled(false);
-        sendToWebhook(null, rawText);
-    }
-    
-    sendBtn.addEventListener('click', sendTextInput);
-    userInputField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !userInputField.disabled) sendTextInput();
-    });
-    
-    // Bind static initial buttons (the first welcome message)
-    function bindStaticInitialButtons() {
+
+    // ---------- BIND INITIAL BUTTONS ----------
+    function bindInitialButtons() {
         const newBtn = document.querySelector('#initialButtons .chat-btn[data-action="new_patient"]');
-        const existingBtn = document.querySelector('#initialButtons .chat-btn[data-action="existing_patient"]');
+        const existBtn = document.querySelector('#initialButtons .chat-btn[data-action="existing_patient"]');
         if (newBtn) {
             newBtn.addEventListener('click', () => {
                 addUserMessage("New Patient", true);
-                currentStep = "start";
-                accumulatedData = {};
-                sendToWebhook("new_patient", null);
-                const btnGroup = document.getElementById('initialButtons');
-                if (btnGroup) btnGroup.style.display = 'none';
+                appointmentData.patientType = 'new_patient';
+                currentLocalStep = 'procedure';
+                addBotMessage("Great! Please select the procedure you need:", procedureOptions);
+                setInputEnabled(false);
+                // Hide initial button group (optional)
+                document.getElementById('initialButtons').style.display = 'none';
             });
         }
-        if (existingBtn) {
-            existingBtn.addEventListener('click', () => {
+        if (existBtn) {
+            existBtn.addEventListener('click', () => {
                 addUserMessage("Existing Patient", true);
-                currentStep = "start";
-                accumulatedData = {};
-                sendToWebhook("existing_patient", null);
-                const btnGroup = document.getElementById('initialButtons');
-                if (btnGroup) btnGroup.style.display = 'none';
+                appointmentData.patientType = 'existing_patient';
+                currentLocalStep = 'procedure';
+                addBotMessage("Great! Please select the procedure you need:", procedureOptions);
+                setInputEnabled(false);
+                document.getElementById('initialButtons').style.display = 'none';
             });
         }
     }
-    
-    // Warn if webhook URL not configured
-    if (N8N_WEBHOOK_URL === "https://your-n8n-instance.com/webhook/chat") {
+
+    // ---------- SEND BUTTON & ENTER ----------
+    sendBtn.addEventListener('click', handleTextInput);
+    userInputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !userInputField.disabled) handleTextInput();
+    });
+
+    // Warn if webhook URL not updated
+    if (N8N_WEBHOOK_URL === "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425") {
         console.warn("⚠️ Please update N8N_WEBHOOK_URL variable with your actual n8n webhook endpoint.");
         setTimeout(() => {
             const note = document.createElement('div');
@@ -579,11 +345,12 @@
             scrollToBottom();
         }, 500);
     }
-    
-    bindStaticInitialButtons();
-    // Initially no waiting for input (buttons are shown), so input stays disabled
-    waitingForInput = false;
+
+    // Start: disable input (initial buttons visible)
     setInputEnabled(false);
+    bindInitialButtons();
+
+    // (The dynamic button listener for restart is handled inline)
 </script>
 </body>
 </html>
