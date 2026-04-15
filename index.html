@@ -92,23 +92,25 @@
 
     // ---------- LOCAL FLOW STATE ----------
     // Possible steps: 
-    // 'initial'           → waiting for New/Existing choice
-    // 'procedure'         → waiting for procedure selection
-    // 'collecting_name'   → waiting for full name input
-    // 'collecting_phone'  → waiting for phone input
-    // 'collecting_email'  → waiting for email input
-    // 'collecting_datetime' → waiting for date & time input
-    // 'completed'         → all done, disable further input
+    // 'initial'                 → waiting for New/Existing choice
+    // 'procedure'               → waiting for procedure selection
+    // 'collecting_name'         → waiting for full name input
+    // 'collecting_phone'        → waiting for phone input
+    // 'collecting_email'        → waiting for email input
+    // 'collecting_datetime'     → waiting for date & time input
+    // 'collecting_comm_pref'    → waiting for communication preference (buttons)
+    // 'completed'               → all done, disable further input
     let currentLocalStep = 'initial';
     
     // Accumulated appointment data
     let appointmentData = {
-        patientType: '',     // 'new' or 'existing'
+        patientType: '',     // 'new_patient' or 'existing_patient'
         procedure: '',
         name: '',
         phone: '',
         email: '',
-        datetime: ''
+        datetime: '',
+        preferredCommunication: ''   // 'Phone', 'Text', or 'Email'
     };
 
     // DOM elements
@@ -190,6 +192,13 @@
         { text: '🔧 Filling or Tooth Repair', value: 'Filling or Tooth Repair' }
     ];
 
+    // ---------- COMMUNICATION PREFERENCE OPTIONS ----------
+    const commPrefOptions = [
+        { text: '📞 Phone', value: 'Phone' },
+        { text: '💬 Text', value: 'Text' },
+        { text: '📧 Email', value: 'Email' }
+    ];
+
     // ---------- HANDLE BUTTON CLICKS BASED ON LOCAL STEP ----------
     function handleButtonClick(value) {
         if (currentLocalStep === 'initial') {
@@ -209,7 +218,12 @@
             addBotMessage("📝 Please enter your **full name**:", []);
             setInputEnabled(true);
         }
-        // No other button-driven steps in this flow
+        else if (currentLocalStep === 'collecting_comm_pref') {
+            // Communication preference selected
+            appointmentData.preferredCommunication = value;
+            // All data collected → send to webhook
+            submitAppointmentToWebhook();
+        }
     }
 
     // ---------- HANDLE TEXT INPUT ----------
@@ -244,8 +258,12 @@
                 break;
             case 'collecting_datetime':
                 appointmentData.datetime = rawText;
-                // All data collected → send to webhook
-                submitAppointmentToWebhook();
+                currentLocalStep = 'collecting_comm_pref';
+                addBotMessage(
+                    "📲 How would you prefer we contact you for appointment reminders and confirmations?",
+                    commPrefOptions
+                );
+                setInputEnabled(false);  // buttons will be shown
                 break;
             default:
                 // If input received unexpectedly, just show a gentle message
@@ -260,10 +278,14 @@
         setInputEnabled(false);
         currentLocalStep = 'completed';
 
+        // Build the payload with status "confirmed"
         const payload = {
             sessionId: sessionId,
-            action: "submit_appointment",   // your n8n workflow can recognize this
-            data: appointmentData
+            action: "submit_appointment",
+            data: {
+                ...appointmentData,
+                status: "confirmed"   // ✅ Status added as requested
+            }
         };
 
         try {
@@ -277,15 +299,15 @@
             
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
-            // You may show a confirmation from n8n response or default message
-            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via email or phone. Have a great day! 😊", []);
+            // Confirmation message
+            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via your preferred method. Have a great day! 😊", []);
             
-            // Optional: offer a "Start Over" button
+            // Offer a "Start Over" button
             addBotMessage("Would you like to book another appointment?", [
                 { text: "🔄 Start Over", value: "restart" }
             ]);
             
-            // Bind restart button manually (simple)
+            // Bind restart button
             setTimeout(() => {
                 document.querySelectorAll('.chat-btn[data-value="restart"]').forEach(btn => {
                     btn.addEventListener('click', () => location.reload());
@@ -296,7 +318,6 @@
             hideTyping();
             console.error("Webhook error:", error);
             addBotMessage("⚠️ Sorry, we couldn't submit your request. Please try again or call the clinic directly.", []);
-            // Allow retry? For simplicity we can enable input but we're in completed state.
         }
     }
 
@@ -311,7 +332,6 @@
                 currentLocalStep = 'procedure';
                 addBotMessage("Great! Please select the procedure you need:", procedureOptions);
                 setInputEnabled(false);
-                // Hide initial button group (optional)
                 document.getElementById('initialButtons').style.display = 'none';
             });
         }
@@ -336,8 +356,6 @@
     // Start: disable input (initial buttons visible)
     setInputEnabled(false);
     bindInitialButtons();
-
-    // (No demo mode warning — removed per request)
 </script>
 </body>
 </html>
