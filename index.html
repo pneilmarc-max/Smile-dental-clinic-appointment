@@ -62,11 +62,12 @@
         <div class="message bot-message">
             <div class="bubble">
                 👋 Welcome to Smile Dental Clinic! I'm your scheduling assistant.<br>
-                Would you like to book as a <strong>New Patient</strong> or manage an <strong>Existing Patient</strong> appointment?
+                Would you like to book as a <strong>New Patient</strong>, manage an <strong>Existing Patient</strong> appointment, or send a <strong>General Inquiry</strong>?
             </div>
             <div class="button-group" id="initialButtons">
                 <button class="chat-btn" data-action="new_patient">🦷 New Patient</button>
                 <button class="chat-btn" data-action="existing_patient">📋 Existing Patient</button>
+                <button class="chat-btn" data-action="general_inquiry">💬 General Inquiry</button>
             </div>
         </div>
     </div>
@@ -91,27 +92,34 @@
     }
 
     // ---------- LOCAL FLOW STATE ----------
-    // Possible steps: 
-    // 'initial'                 → waiting for New/Existing choice
+    // Steps for appointment flow:
+    // 'initial'                 → waiting for New/Existing patient or General Inquiry
+    // 'booking_type'            → waiting for New Booking or Existing Booking
     // 'procedure'               → waiting for procedure selection
-    // 'collecting_name'         → waiting for full name input
+    // 'collecting_name'         → waiting for full name input (appointment or inquiry)
     // 'collecting_phone'        → waiting for phone input
-    // 'collecting_email'        → waiting for email input
+    // 'collecting_email'        → waiting for email input (appointment or inquiry)
     // 'collecting_datetime'     → waiting for date & time input
     // 'collecting_comm_pref'    → waiting for communication preference (buttons)
-    // 'completed'               → all done, disable further input
+    // 'collecting_message'      → waiting for inquiry message
+    // 'completed'               → all done
     let currentLocalStep = 'initial';
     
     // Accumulated appointment data
     let appointmentData = {
-        patientType: '',     // 'new_patient' or 'existing_patient'
+        patientType: '',        // 'new_patient', 'existing_patient', or 'general_inquiry'
+        bookingType: '',        // 'new_booking' or 'existing_booking'
         procedure: '',
         name: '',
         phone: '',
         email: '',
         datetime: '',
-        preferredCommunication: ''   // 'Phone', 'Text', or 'Email'
+        preferredCommunication: '',
+        message: ''             // for general inquiry
     };
+
+    // Flag to differentiate between appointment flow and inquiry flow
+    let isInquiryFlow = false;
 
     // DOM elements
     const chatContainer = document.getElementById('chatMessages');
@@ -169,13 +177,12 @@
         scrollToBottom();
     }
 
-    // Show typing indicator while calling webhook (only used at final submission)
     function showTyping() {
         hideTyping();
         const typing = document.createElement('div');
         typing.classList.add('message', 'bot-message');
         typing.id = 'typingIndicator';
-        typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Scheduling...</div>`;
+        typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Processing...</div>`;
         chatContainer.appendChild(typing);
         scrollToBottom();
     }
@@ -184,7 +191,12 @@
         if (t) t.remove();
     }
 
-    // ---------- PROCEDURE OPTIONS ----------
+    // ---------- OPTIONS ----------
+    const bookingTypeOptions = [
+        { text: '✨ New Booking', value: 'new_booking' },
+        { text: '📅 Existing Booking (modify/cancel)', value: 'existing_booking' }
+    ];
+
     const procedureOptions = [
         { text: '🪥 Routine cleaning / checkup', value: 'Routine cleaning / checkup' },
         { text: '🚨 Emergency / dental pain', value: 'Emergency / dental pain' },
@@ -192,37 +204,45 @@
         { text: '🔧 Filling or Tooth Repair', value: 'Filling or Tooth Repair' }
     ];
 
-    // ---------- COMMUNICATION PREFERENCE OPTIONS ----------
     const commPrefOptions = [
         { text: '📞 Phone', value: 'Phone' },
         { text: '💬 Text', value: 'Text' },
         { text: '📧 Email', value: 'Email' }
     ];
 
-    // ---------- HANDLE BUTTON CLICKS BASED ON LOCAL STEP ----------
+    // ---------- HANDLE BUTTON CLICKS ----------
     function handleButtonClick(value) {
         if (currentLocalStep === 'initial') {
-            // New or Existing patient choice
-            appointmentData.patientType = value; // 'new_patient' or 'existing_patient'
+            // Patient type choice: new_patient, existing_patient, or general_inquiry
+            appointmentData.patientType = value;
+            
+            if (value === 'general_inquiry') {
+                isInquiryFlow = true;
+                currentLocalStep = 'collecting_name';
+                addBotMessage("📝 Please enter your **full name**:", []);
+                setInputEnabled(true);
+            } else {
+                isInquiryFlow = false;
+                currentLocalStep = 'booking_type';
+                addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
+                setInputEnabled(false);
+            }
+        }
+        else if (currentLocalStep === 'booking_type') {
+            appointmentData.bookingType = value;
             currentLocalStep = 'procedure';
-            addBotMessage(
-                "Great! Please select the procedure you need:",
-                procedureOptions
-            );
+            addBotMessage("Great! Please select the procedure you need:", procedureOptions);
             setInputEnabled(false);
         }
         else if (currentLocalStep === 'procedure') {
-            // Procedure selected
             appointmentData.procedure = value;
             currentLocalStep = 'collecting_name';
             addBotMessage("📝 Please enter your **full name**:", []);
             setInputEnabled(true);
         }
         else if (currentLocalStep === 'collecting_comm_pref') {
-            // Communication preference selected
             appointmentData.preferredCommunication = value;
-            // All data collected → send to webhook
-            submitAppointmentToWebhook();
+            submitToWebhook();
         }
     }
 
@@ -233,60 +253,101 @@
 
         addUserMessage(rawText, false);
         userInputField.value = '';
-
-        // Disable input while processing to avoid double submission
         setInputEnabled(false);
 
-        switch (currentLocalStep) {
-            case 'collecting_name':
-                appointmentData.name = rawText;
-                currentLocalStep = 'collecting_phone';
-                addBotMessage("📞 What is the best **phone number** to reach you?", []);
-                setInputEnabled(true);
-                break;
-            case 'collecting_phone':
-                appointmentData.phone = rawText;
-                currentLocalStep = 'collecting_email';
-                addBotMessage("📧 Please provide your **email address** for confirmation:", []);
-                setInputEnabled(true);
-                break;
-            case 'collecting_email':
-                appointmentData.email = rawText;
-                currentLocalStep = 'collecting_datetime';
-                addBotMessage("📅 When would you like to come in? Please provide **date and preferred time** (e.g., 'April 12, 10:30 AM'):", []);
-                setInputEnabled(true);
-                break;
-            case 'collecting_datetime':
-                appointmentData.datetime = rawText;
-                currentLocalStep = 'collecting_comm_pref';
-                addBotMessage(
-                    "📲 How would you prefer we contact you for appointment reminders and confirmations?",
-                    commPrefOptions
-                );
-                setInputEnabled(false);  // buttons will be shown
-                break;
-            default:
-                // If input received unexpectedly, just show a gentle message
-                addBotMessage("Please use the buttons to continue.", []);
-                setInputEnabled(false);
+        if (isInquiryFlow) {
+            // Inquiry flow: name → email → message
+            switch (currentLocalStep) {
+                case 'collecting_name':
+                    appointmentData.name = rawText;
+                    currentLocalStep = 'collecting_email';
+                    addBotMessage("📧 Please provide your **email address** so we can respond:", []);
+                    setInputEnabled(true);
+                    break;
+                case 'collecting_email':
+                    appointmentData.email = rawText;
+                    currentLocalStep = 'collecting_message';
+                    addBotMessage("💬 Please type your **inquiry or message**:", []);
+                    setInputEnabled(true);
+                    break;
+                case 'collecting_message':
+                    appointmentData.message = rawText;
+                    submitToWebhook();
+                    break;
+                default:
+                    addBotMessage("Please use the buttons to continue.", []);
+                    setInputEnabled(false);
+            }
+        } else {
+            // Appointment flow: name → phone → email → datetime → comm pref
+            switch (currentLocalStep) {
+                case 'collecting_name':
+                    appointmentData.name = rawText;
+                    currentLocalStep = 'collecting_phone';
+                    addBotMessage("📞 What is the best **phone number** to reach you?", []);
+                    setInputEnabled(true);
+                    break;
+                case 'collecting_phone':
+                    appointmentData.phone = rawText;
+                    currentLocalStep = 'collecting_email';
+                    addBotMessage("📧 Please provide your **email address** for confirmation:", []);
+                    setInputEnabled(true);
+                    break;
+                case 'collecting_email':
+                    appointmentData.email = rawText;
+                    currentLocalStep = 'collecting_datetime';
+                    addBotMessage("📅 When would you like to come in? Please provide **date and preferred time** (e.g., 'April 12, 10:30 AM'):", []);
+                    setInputEnabled(true);
+                    break;
+                case 'collecting_datetime':
+                    appointmentData.datetime = rawText;
+                    currentLocalStep = 'collecting_comm_pref';
+                    addBotMessage("📲 How would you prefer we contact you for appointment reminders and confirmations?", commPrefOptions);
+                    setInputEnabled(false);
+                    break;
+                default:
+                    addBotMessage("Please use the buttons to continue.", []);
+                    setInputEnabled(false);
+            }
         }
     }
 
-    // ---------- FINAL SUBMISSION TO N8N ----------
-    async function submitAppointmentToWebhook() {
+    // ---------- SUBMIT TO WEBHOOK ----------
+    async function submitToWebhook() {
         showTyping();
         setInputEnabled(false);
         currentLocalStep = 'completed';
 
-        // Build the payload with status "confirmed"
-        const payload = {
-            sessionId: sessionId,
-            action: "submit_appointment",
-            data: {
-                ...appointmentData,
-                status: "confirmed"   // ✅ Status added as requested
-            }
-        };
+        let payload;
+        if (isInquiryFlow) {
+            payload = {
+                sessionId: sessionId,
+                action: "submit_inquiry",
+                data: {
+                    patientType: appointmentData.patientType,
+                    name: appointmentData.name,
+                    email: appointmentData.email,
+                    message: appointmentData.message,
+                    status: "inquiry"
+                }
+            };
+        } else {
+            payload = {
+                sessionId: sessionId,
+                action: "submit_appointment",
+                data: {
+                    patientType: appointmentData.patientType,
+                    bookingType: appointmentData.bookingType,
+                    procedure: appointmentData.procedure,
+                    name: appointmentData.name,
+                    phone: appointmentData.phone,
+                    email: appointmentData.email,
+                    datetime: appointmentData.datetime,
+                    preferredCommunication: appointmentData.preferredCommunication,
+                    status: "confirmed"
+                }
+            };
+        }
 
         try {
             const response = await fetch(N8N_WEBHOOK_URL, {
@@ -299,15 +360,16 @@
             
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
-            // Confirmation message
-            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via your preferred method. Have a great day! 😊", []);
+            if (isInquiryFlow) {
+                addBotMessage("✅ Thank you for your inquiry! We'll get back to you via email within 1–2 business days. 😊", []);
+            } else {
+                addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via your preferred method. Have a great day! 😊", []);
+            }
             
-            // Offer a "Start Over" button
-            addBotMessage("Would you like to book another appointment?", [
+            addBotMessage("Would you like to start over?", [
                 { text: "🔄 Start Over", value: "restart" }
             ]);
             
-            // Bind restart button
             setTimeout(() => {
                 document.querySelectorAll('.chat-btn[data-value="restart"]').forEach(btn => {
                     btn.addEventListener('click', () => location.reload());
@@ -317,7 +379,7 @@
         } catch (error) {
             hideTyping();
             console.error("Webhook error:", error);
-            addBotMessage("⚠️ Sorry, we couldn't submit your request. Please try again or call the clinic directly.", []);
+            addBotMessage("⚠️ Sorry, we couldn't process your request. Please try again or call the clinic directly.", []);
         }
     }
 
@@ -325,26 +387,29 @@
     function bindInitialButtons() {
         const newBtn = document.querySelector('#initialButtons .chat-btn[data-action="new_patient"]');
         const existBtn = document.querySelector('#initialButtons .chat-btn[data-action="existing_patient"]');
-        if (newBtn) {
-            newBtn.addEventListener('click', () => {
-                addUserMessage("New Patient", true);
-                appointmentData.patientType = 'new_patient';
-                currentLocalStep = 'procedure';
-                addBotMessage("Great! Please select the procedure you need:", procedureOptions);
+        const inquiryBtn = document.querySelector('#initialButtons .chat-btn[data-action="general_inquiry"]');
+        
+        const handleInitialClick = (type, displayText) => {
+            addUserMessage(displayText, true);
+            appointmentData.patientType = type;
+            document.getElementById('initialButtons').style.display = 'none';
+            
+            if (type === 'general_inquiry') {
+                isInquiryFlow = true;
+                currentLocalStep = 'collecting_name';
+                addBotMessage("📝 Please enter your **full name**:", []);
+                setInputEnabled(true);
+            } else {
+                isInquiryFlow = false;
+                currentLocalStep = 'booking_type';
+                addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
                 setInputEnabled(false);
-                document.getElementById('initialButtons').style.display = 'none';
-            });
-        }
-        if (existBtn) {
-            existBtn.addEventListener('click', () => {
-                addUserMessage("Existing Patient", true);
-                appointmentData.patientType = 'existing_patient';
-                currentLocalStep = 'procedure';
-                addBotMessage("Great! Please select the procedure you need:", procedureOptions);
-                setInputEnabled(false);
-                document.getElementById('initialButtons').style.display = 'none';
-            });
-        }
+            }
+        };
+
+        if (newBtn) newBtn.addEventListener('click', () => handleInitialClick('new_patient', 'New Patient'));
+        if (existBtn) existBtn.addEventListener('click', () => handleInitialClick('existing_patient', 'Existing Patient'));
+        if (inquiryBtn) inquiryBtn.addEventListener('click', () => handleInitialClick('general_inquiry', 'General Inquiry'));
     }
 
     // ---------- SEND BUTTON & ENTER ----------
