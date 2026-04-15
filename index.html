@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* (Keep all existing CSS unchanged) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: linear-gradient(145deg, #e0f2fe 0%, #b9e0f5 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
         body::before { content: "🦷"; font-size: 140px; opacity: 0.05; position: absolute; bottom: 20px; right: 20px; pointer-events: none; transform: rotate(-10deg); }
@@ -334,23 +333,11 @@
         if (e.key === 'Enter' && !userInputField.disabled) handleTextInput();
     });
 
-    // Warn if webhook URL not updated
-    if (N8N_WEBHOOK_URL === "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425") {
-        console.warn("⚠️ Please update N8N_WEBHOOK_URL variable with your actual n8n webhook endpoint.");
-        setTimeout(() => {
-            const note = document.createElement('div');
-            note.classList.add('message', 'bot-message');
-            note.innerHTML = `<div class="bubble" style="background:#fff3e0;">🔧 Demo mode: Connect your n8n webhook URL in the script.<br>Edit <strong>N8N_WEBHOOK_URL</strong> inside the HTML.</div>`;
-            chatContainer.appendChild(note);
-            scrollToBottom();
-        }, 500);
-    }
-
     // Start: disable input (initial buttons visible)
     setInputEnabled(false);
     bindInitialButtons();
 
-    // (The dynamic button listener for restart is handled inline)
+    // (No demo mode warning — removed per request)
 </script>
 </body>
 </html>
