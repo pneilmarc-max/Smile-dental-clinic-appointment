@@ -307,7 +307,7 @@
         }
     }
 
-    // ---------- RAG WEBHOOK CALL ----------
+    // ---------- RAG WEBHOOK CALL (UPDATED TO HANDLE PLAIN TEXT) ----------
     async function sendRagQuery(question) {
         showTyping();
         setInputEnabled(false);
@@ -319,8 +319,17 @@
             });
             hideTyping();
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            const answer = data.answer || "I'm sorry, I couldn't find an answer. Please try rephrasing or contact the clinic directly.";
+            
+            // Try to parse as JSON; if it fails, use raw text as answer
+            let answer;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const data = await response.json();
+                answer = data.answer || data.response || data.text || "I'm sorry, I couldn't find an answer.";
+            } else {
+                answer = await response.text();
+            }
+            
             addBotMessage(answer);
             currentStep = 'rag_followup';
             addBotMessage("Would you like to ask another question or return to the main menu?", ragFollowUpOptions);
