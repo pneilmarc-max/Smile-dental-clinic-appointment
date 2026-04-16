@@ -87,11 +87,11 @@
     }
 
     // ---------- STATE ----------
-    let currentStep = 'main';          // 'main', 'patient_type', 'collecting_name', etc.
+    let currentStep = 'main';
     let isRagMode = false;
     let appointmentData = {
-        patientType: '',      // 'new' or 'existing'
-        action: '',           // 'new_appointment', 'modify', 'cancel'
+        patientType: '',
+        action: '',
         procedure: '',
         name: '',
         phone: '',
@@ -129,10 +129,7 @@
                 button.className = 'chat-btn';
                 button.innerText = btn.text;
                 button.setAttribute('data-value', btn.value);
-                button.addEventListener('click', () => {
-                    addUserMessage(btn.text);
-                    handleButtonClick(btn.value);
-                });
+                // No individual click handler — delegated globally
                 btnGroup.appendChild(button);
             });
             msgDiv.appendChild(btnGroup);
@@ -175,7 +172,6 @@
         setInputEnabled(false);
     }
 
-    // Error recovery: offers "Start Over" (restart current flow) and "Main Menu"
     function showErrorRecovery(contextFlow) {
         addBotMessage("⚠️ Something went wrong. What would you like to do?", [
             { text: '🔄 Start Over', value: 'restart_' + contextFlow },
@@ -209,26 +205,21 @@
         { text: '🏠 Main menu', value: 'main_menu' }
     ];
 
-    // ---------- BUTTON HANDLER ----------
+    // ---------- CENTRAL BUTTON HANDLER (Event Delegation) ----------
     function handleButtonClick(value) {
         if (value === 'main_menu') { showMainMenu(); return; }
         if (value.startsWith('restart_')) {
             const flow = value.replace('restart_', '');
-            if (flow === 'new_appointment') {
-                startNewAppointmentFlow();
-            } else if (flow === 'modify') {
-                startModifyFlow();
-            } else if (flow === 'cancel') {
-                startCancelFlow();
-            }
+            if (flow === 'new_appointment') startNewAppointmentFlow();
+            else if (flow === 'modify') startModifyFlow();
+            else if (flow === 'cancel') startCancelFlow();
             return;
         }
 
         // Main menu
         if (currentStep === 'main') {
-            if (value === 'new_appointment') {
-                startNewAppointmentFlow();
-            } else if (value === 'existing_appointment') {
+            if (value === 'new_appointment') startNewAppointmentFlow();
+            else if (value === 'existing_appointment') {
                 currentStep = 'existing_action';
                 addBotMessage("What would you like to do with your existing appointment?", existingActionOptions);
                 setInputEnabled(false);
@@ -241,7 +232,7 @@
         }
         // New Appointment: patient type
         else if (currentStep === 'patient_type') {
-            appointmentData.patientType = value; // 'new' or 'existing'
+            appointmentData.patientType = value;
             appointmentData.action = 'new_appointment';
             currentStep = 'collecting_name';
             addBotMessage("📝 Please enter your **full name**:", []);
@@ -264,11 +255,8 @@
         // Existing Appointment: action (modify or cancel)
         else if (currentStep === 'existing_action') {
             appointmentData.action = value;
-            if (value === 'modify') {
-                startModifyFlow();
-            } else { // cancel
-                startCancelFlow();
-            }
+            if (value === 'modify') startModifyFlow();
+            else startCancelFlow();
         }
         // Modify: procedure selection
         else if (currentStep === 'modify_procedure') {
@@ -279,11 +267,8 @@
         }
         // Cancel confirmation
         else if (currentStep === 'confirm_cancel') {
-            if (value === 'confirm_cancel') {
-                submitToWebhook('cancel');
-            } else {
-                showMainMenu();
-            }
+            if (value === 'confirm_cancel') submitToWebhook('cancel');
+            else showMainMenu();
         }
         // RAG follow-up
         else if (currentStep === 'rag_followup') {
@@ -291,11 +276,9 @@
                 currentStep = 'rag_question';
                 addBotMessage("Sure! What else would you like to know?", []);
                 setInputEnabled(true);
-            } else {
-                showMainMenu();
-            }
+            } else showMainMenu();
         }
-        // Handle dynamic main menu clicks (e.g., after completion)
+        // Dynamic main menu clicks from completed/error states
         if (['new_appointment','existing_appointment','general_inquiry'].includes(value) && 
             ['main','rag_followup','completed','error'].includes(currentStep)) {
             addUserMessage(value === 'new_appointment' ? 'New Appointment' : (value === 'existing_appointment' ? 'Existing Appointment' : 'General Inquiry'));
@@ -339,7 +322,6 @@
         }
 
         switch (currentStep) {
-            // New appointment: name → phone → email → comm pref
             case 'collecting_name':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone';
@@ -363,7 +345,6 @@
                 submitToWebhook('new_appointment');
                 break;
             
-            // Modify: name → phone → email → procedure → datetime
             case 'collecting_name_modify':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone_modify';
@@ -387,7 +368,6 @@
                 submitToWebhook('modify');
                 break;
             
-            // Cancel: name → phone → confirm
             case 'collecting_name_cancel':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone_cancel';
@@ -410,7 +390,7 @@
         }
     }
 
-    // ---------- RAG QUERY (uses same webhook) ----------
+    // ---------- RAG QUERY ----------
     async function sendRagQuery(question) {
         showTyping();
         setInputEnabled(false);
@@ -474,35 +454,35 @@
         }
     }
 
-    // ---------- INITIAL BINDINGS ----------
-    function bindInitialButtons() {
-        document.querySelectorAll('#initialButtons .chat-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const action = btn.getAttribute('data-action');
-                addUserMessage(btn.innerText);
-                document.getElementById('initialButtons').style.display = 'none';
-                handleButtonClick(action);
-            });
-        });
-    }
-
+    // ---------- EVENT DELEGATION (single global listener) ----------
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('chat-btn')) {
-            const val = e.target.getAttribute('data-value');
-            if (val === 'main_menu') {
-                addUserMessage(e.target.innerText);
-                showMainMenu();
-            }
+        const btn = e.target.closest('.chat-btn');
+        if (!btn) return;
+        
+        const value = btn.getAttribute('data-value') || btn.getAttribute('data-action');
+        if (!value) return;
+
+        // Capture user message from button text (except for main menu initial buttons)
+        const isInitial = btn.closest('#initialButtons');
+        if (!isInitial) {
+            addUserMessage(btn.innerText);
+        } else {
+            // Hide initial button group after first click
+            document.getElementById('initialButtons').style.display = 'none';
+            addUserMessage(btn.innerText);
         }
+
+        handleButtonClick(value);
     });
 
+    // Send button & Enter key
     sendBtn.addEventListener('click', handleTextInput);
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !userInput.disabled) handleTextInput();
     });
 
+    // Start
     setInputEnabled(false);
-    bindInitialButtons();
 </script>
 </body>
 </html>
