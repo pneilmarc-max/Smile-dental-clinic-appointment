@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Smile Dental Clinic | Smart Scheduler</title>
-    <!-- Google Fonts & Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -63,8 +62,8 @@
                 How can I help you today?
             </div>
             <div class="button-group" id="initialButtons">
-                <button class="chat-btn" data-action="new_patient">🦷 New Patient</button>
-                <button class="chat-btn" data-action="existing_patient">📋 Existing Patient</button>
+                <button class="chat-btn" data-action="new_appointment">🦷 New Appointment</button>
+                <button class="chat-btn" data-action="existing_appointment">📋 Existing Appointment</button>
                 <button class="chat-btn" data-action="general_inquiry">💬 General Inquiry</button>
             </div>
         </div>
@@ -78,9 +77,8 @@
 </div>
 
 <script>
-    // ------------------- CONFIGURATION -------------------
-    const APPOINTMENT_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";
-    const RAG_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/805670a4-6cc9-4b2f-a45c-d42c69d963e2";
+    // ------------------- SINGLE WEBHOOK URL -------------------
+    const WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";
     
     let sessionId = localStorage.getItem('smile_sessionId');
     if (!sessionId) {
@@ -89,11 +87,11 @@
     }
 
     // ---------- STATE ----------
-    let currentStep = 'initial';
+    let currentStep = 'main';          // 'main', 'new_patient_type', 'collecting_name', etc.
     let isRagMode = false;
     let appointmentData = {
-        patientType: '',
-        action: '',           // 'new_appointment', 'modify', 'cancel'
+        patientType: '',      // 'new' or 'existing'
+        action: '',           // 'new_appointment', 'modify', 'cancel', 'rag_query'
         procedure: '',
         name: '',
         phone: '',
@@ -114,9 +112,7 @@
         if (enabled) userInput.focus();
     }
 
-    function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
+    function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
 
     function addBotMessage(text, buttons = []) {
         const msgDiv = document.createElement('div');
@@ -165,27 +161,24 @@
         chatMessages.appendChild(typing);
         scrollToBottom();
     }
-    function hideTyping() {
-        document.getElementById('typingIndicator')?.remove();
-    }
+    function hideTyping() { document.getElementById('typingIndicator')?.remove(); }
 
     function showMainMenu() {
-        currentStep = 'initial';
+        currentStep = 'main';
         isRagMode = false;
         appointmentData = { patientType: '', action: '', procedure: '', name: '', phone: '', email: '', datetime: '', preferredCommunication: '' };
         addBotMessage("👋 What would you like to do?", [
-            { text: '🦷 New Patient', value: 'new_patient' },
-            { text: '📋 Existing Patient', value: 'existing_patient' },
+            { text: '🦷 New Appointment', value: 'new_appointment' },
+            { text: '📋 Existing Appointment', value: 'existing_appointment' },
             { text: '💬 General Inquiry', value: 'general_inquiry' }
         ]);
         setInputEnabled(false);
     }
 
     // ---------- OPTIONS ----------
-    const newAppointmentOptions = [{ text: '✨ New Appointment', value: 'new_appointment' }];
-    const existingPatientOptions = [
-        { text: '✏️ Modify Appointment', value: 'modify' },
-        { text: '❌ Cancel Appointment', value: 'cancel' }
+    const patientTypeOptions = [
+        { text: '✨ New Patient', value: 'new' },
+        { text: '📋 Existing Patient', value: 'existing' }
     ];
     const procedureOptions = [
         { text: '🪥 Routine cleaning / checkup', value: 'Routine cleaning / checkup' },
@@ -193,62 +186,57 @@
         { text: '🦷 Consultation (Invisalign, Implants, etc.)', value: 'Consultation' },
         { text: '🔧 Filling or Tooth Repair', value: 'Filling / Repair' }
     ];
-    const commPrefOptions = [
-        { text: '📞 Phone', value: 'Phone' },
-        { text: '💬 Text', value: 'Text' },
-        { text: '📧 Email', value: 'Email' }
+    const existingActionOptions = [
+        { text: '✏️ Modify Appointment', value: 'modify' },
+        { text: '❌ Cancel Appointment', value: 'cancel' }
     ];
     const ragFollowUpOptions = [
         { text: '🔄 Ask another question', value: 'ask_another' },
-        { text: '🏠 Back to main menu', value: 'main_menu' }
+        { text: '🏠 Main menu', value: 'main_menu' }
     ];
-    const errorRecoveryOptions = [{ text: '🔄 Start Over', value: 'restart' }];
+    const errorOptions = [
+        { text: '🔄 Start Over', value: 'restart' },
+        { text: '🏠 Main menu', value: 'main_menu' }
+    ];
 
     // ---------- BUTTON HANDLER ----------
     function handleButtonClick(value) {
         if (value === 'restart') { showMainMenu(); return; }
+        if (value === 'main_menu') { showMainMenu(); return; }
 
-        // Main menu selection
-        if (currentStep === 'initial') {
-            document.getElementById('initialButtons').style.display = 'none';
-            appointmentData.patientType = value;
-            if (value === 'general_inquiry') {
+        // Main menu
+        if (currentStep === 'main') {
+            appointmentData.action = value;
+            if (value === 'new_appointment') {
+                currentStep = 'patient_type';
+                addBotMessage("Are you a new patient or an existing patient?", patientTypeOptions);
+                setInputEnabled(false);
+            } else if (value === 'existing_appointment') {
+                currentStep = 'existing_action';
+                addBotMessage("What would you like to do with your existing appointment?", existingActionOptions);
+                setInputEnabled(false);
+            } else if (value === 'general_inquiry') {
                 isRagMode = true;
                 currentStep = 'rag_question';
                 addBotMessage("💡 What would you like to know about our clinic?", []);
                 setInputEnabled(true);
-            } else if (value === 'new_patient') {
-                isRagMode = false;
-                currentStep = 'new_appointment_type';
-                addBotMessage("Would you like to schedule a new appointment?", newAppointmentOptions);
-                setInputEnabled(false);
-            } else if (value === 'existing_patient') {
-                isRagMode = false;
-                currentStep = 'existing_action';
-                addBotMessage("What would you like to do with your existing appointment?", existingPatientOptions);
-                setInputEnabled(false);
             }
         }
-        // New patient → new appointment
-        else if (currentStep === 'new_appointment_type') {
-            appointmentData.action = value; // 'new_appointment'
-            currentStep = 'procedure';
-            addBotMessage("Select procedure:", procedureOptions);
-            setInputEnabled(false);
-        }
-        // Procedure selection (new appointment)
-        else if (currentStep === 'procedure') {
-            appointmentData.procedure = value;
+        // New appointment: patient type
+        else if (currentStep === 'patient_type') {
+            appointmentData.patientType = value; // 'new' or 'existing'
             currentStep = 'collecting_name';
             addBotMessage("📝 Please enter your **full name**:", []);
             setInputEnabled(true);
         }
-        // Communication preference (new appointment)
-        else if (currentStep === 'collecting_comm_pref') {
-            appointmentData.preferredCommunication = value;
-            submitAppointment('new_appointment');
+        // Procedure selection (new appointment)
+        else if (currentStep === 'collecting_procedure') {
+            appointmentData.procedure = value;
+            currentStep = 'collecting_datetime';
+            addBotMessage("📅 When would you like to come in? (e.g., 'April 12, 10:30 AM')", []);
+            setInputEnabled(true);
         }
-        // Existing patient action selection
+        // Existing appointment action
         else if (currentStep === 'existing_action') {
             appointmentData.action = value; // 'modify' or 'cancel'
             if (value === 'modify') {
@@ -262,16 +250,16 @@
             }
         }
         // Procedure selection for modify
-        else if (currentStep === 'collecting_new_procedure') {
+        else if (currentStep === 'modify_procedure') {
             appointmentData.procedure = value;
-            currentStep = 'collecting_new_datetime';
-            addBotMessage("📅 What is the new **date and time** for your appointment? (e.g., 'April 20, 2:00 PM')", []);
+            currentStep = 'modify_datetime';
+            addBotMessage("📅 What is the new **date and time**? (e.g., 'April 20, 2:00 PM')", []);
             setInputEnabled(true);
         }
         // Cancel confirmation
         else if (currentStep === 'confirm_cancel') {
             if (value === 'confirm_cancel') {
-                submitAppointment('cancel');
+                submitToWebhook('cancel');
             } else {
                 showMainMenu();
             }
@@ -286,11 +274,10 @@
                 showMainMenu();
             }
         }
-
-        // Handle main menu selections from dynamic buttons
-        if (['new_patient','existing_patient','general_inquiry'].includes(value) && 
-            ['initial','rag_followup','completed','error'].includes(currentStep)) {
-            addUserMessage(value === 'new_patient' ? 'New Patient' : (value === 'existing_patient' ? 'Existing Patient' : 'General Inquiry'));
+        // Handle dynamic main menu clicks
+        if (['new_appointment','existing_appointment','general_inquiry'].includes(value) && 
+            ['main','rag_followup','completed','error'].includes(currentStep)) {
+            addUserMessage(value === 'new_appointment' ? 'New Appointment' : (value === 'existing_appointment' ? 'Existing Appointment' : 'General Inquiry'));
             handleButtonClick(value);
         }
     }
@@ -309,7 +296,7 @@
         }
 
         switch (currentStep) {
-            // New patient flow
+            // New appointment flow
             case 'collecting_name':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone';
@@ -324,18 +311,16 @@
                 break;
             case 'collecting_email':
                 appointmentData.email = text;
-                currentStep = 'collecting_datetime';
-                addBotMessage("📅 When would you like to come in? (e.g., 'April 12, 10:30 AM')", []);
-                setInputEnabled(true);
+                currentStep = 'collecting_procedure';
+                addBotMessage("Which procedure do you need?", procedureOptions);
+                setInputEnabled(false);
                 break;
             case 'collecting_datetime':
                 appointmentData.datetime = text;
-                currentStep = 'collecting_comm_pref';
-                addBotMessage("📲 How would you prefer we contact you?", commPrefOptions);
-                setInputEnabled(false);
+                submitToWebhook('new_appointment');
                 break;
             
-            // Modify flow: name → phone → email → new procedure → new datetime
+            // Modify flow: name → phone → email → procedure → datetime
             case 'collecting_name_modify':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone_modify';
@@ -350,16 +335,16 @@
                 break;
             case 'collecting_email_modify':
                 appointmentData.email = text;
-                currentStep = 'collecting_new_procedure';
+                currentStep = 'modify_procedure';
                 addBotMessage("Which procedure would you like to change to?", procedureOptions);
                 setInputEnabled(false);
                 break;
-            case 'collecting_new_datetime':
+            case 'modify_datetime':
                 appointmentData.datetime = text;
-                submitAppointment('modify');
+                submitToWebhook('modify');
                 break;
             
-            // Cancel flow: name → phone
+            // Cancel flow: name → phone → confirm
             case 'collecting_name_cancel':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone_cancel';
@@ -382,15 +367,15 @@
         }
     }
 
-    // ---------- RAG ----------
+    // ---------- RAG QUERY ----------
     async function sendRagQuery(question) {
         showTyping();
         setInputEnabled(false);
         try {
-            const response = await fetch(RAG_WEBHOOK_URL, {
+            const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId, question })
+                body: JSON.stringify({ sessionId, action: 'rag_query', question })
             });
             hideTyping();
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -403,47 +388,47 @@
             } else {
                 answer = await response.text();
             }
-            
             addBotMessage(answer);
             currentStep = 'rag_followup';
             addBotMessage("Would you like to ask another question or return to the main menu?", ragFollowUpOptions);
         } catch (error) {
             hideTyping();
             console.error("RAG error:", error);
-            addBotMessage("⚠️ Sorry, I'm having trouble answering right now.", errorRecoveryOptions);
+            addBotMessage("⚠️ Sorry, I'm having trouble answering right now.", errorOptions);
             currentStep = 'error';
         }
     }
 
-    // ---------- SUBMIT APPOINTMENT ----------
-    async function submitAppointment(actionType) {
+    // ---------- SUBMIT TO WEBHOOK ----------
+    async function submitToWebhook(actionType) {
         showTyping();
         setInputEnabled(false);
         currentStep = 'completed';
         const payload = {
             sessionId,
             action: actionType,
-            data: { 
-                ...appointmentData, 
-                action: actionType,
-                status: actionType === 'cancel' ? 'cancelled' : 'confirmed'
-            }
+            data: { ...appointmentData, action: actionType, status: actionType === 'cancel' ? 'cancelled' : 'confirmed' }
         };
         try {
-            const response = await fetch(APPOINTMENT_WEBHOOK_URL, {
+            const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             hideTyping();
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            let msg = actionType === 'cancel' ? '✅ Your appointment has been cancelled.' : '✅ Your appointment request has been received. We'll confirm shortly.';
+            let msg = actionType === 'cancel' ? '✅ Your appointment has been cancelled.' : '✅ Your appointment request has been received. We\'ll confirm shortly.';
             addBotMessage(msg + " 😊");
-            addBotMessage("Would you like to start over?", [{ text: '🔄 Start Over', value: 'restart' }]);
+            addBotMessage("What would you like to do next?", [
+                { text: '🔄 New Appointment', value: 'new_appointment' },
+                { text: '📋 Existing Appointment', value: 'existing_appointment' },
+                { text: '💬 General Inquiry', value: 'general_inquiry' }
+            ]);
+            currentStep = 'main';
         } catch (error) {
             hideTyping();
-            console.error("Appointment error:", error);
-            addBotMessage("⚠️ Sorry, we couldn't process your request. Please try again.", errorRecoveryOptions);
+            console.error("Webhook error:", error);
+            addBotMessage("⚠️ Sorry, we couldn't process your request. Please try again.", errorOptions);
             currentStep = 'error';
         }
     }
@@ -454,33 +439,32 @@
             btn.addEventListener('click', () => {
                 const action = btn.getAttribute('data-action');
                 addUserMessage(btn.innerText);
-                appointmentData.patientType = action;
+                appointmentData.action = action;
                 document.getElementById('initialButtons').style.display = 'none';
                 if (action === 'general_inquiry') {
                     isRagMode = true;
                     currentStep = 'rag_question';
                     addBotMessage("💡 What would you like to know about our clinic?", []);
                     setInputEnabled(true);
-                } else if (action === 'new_patient') {
+                } else if (action === 'new_appointment') {
                     isRagMode = false;
-                    currentStep = 'new_appointment_type';
-                    addBotMessage("Would you like to schedule a new appointment?", newAppointmentOptions);
+                    currentStep = 'patient_type';
+                    addBotMessage("Are you a new patient or an existing patient?", patientTypeOptions);
                     setInputEnabled(false);
-                } else if (action === 'existing_patient') {
+                } else if (action === 'existing_appointment') {
                     isRagMode = false;
                     currentStep = 'existing_action';
-                    addBotMessage("What would you like to do with your existing appointment?", existingPatientOptions);
+                    addBotMessage("What would you like to do with your existing appointment?", existingActionOptions);
                     setInputEnabled(false);
                 }
             });
         });
     }
 
-    // Global listener for dynamic buttons
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('chat-btn')) {
             const val = e.target.getAttribute('data-value');
-            if (val === 'restart') {
+            if (val === 'restart' || val === 'main_menu') {
                 addUserMessage(e.target.innerText);
                 showMainMenu();
             }
