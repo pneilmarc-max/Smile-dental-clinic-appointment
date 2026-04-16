@@ -93,7 +93,7 @@
     let isRagMode = false;
     let appointmentData = {
         patientType: '',
-        action: '',           // 'new_booking', 'modify', 'cancel'
+        action: '',           // 'new_appointment', 'modify', 'cancel'
         procedure: '',
         name: '',
         phone: '',
@@ -182,7 +182,7 @@
     }
 
     // ---------- OPTIONS ----------
-    const newPatientOptions = [{ text: '✨ New Booking', value: 'new_booking' }];
+    const newAppointmentOptions = [{ text: '✨ New Appointment', value: 'new_appointment' }];
     const existingPatientOptions = [
         { text: '✏️ Modify Appointment', value: 'modify' },
         { text: '❌ Cancel Appointment', value: 'cancel' }
@@ -219,8 +219,8 @@
                 setInputEnabled(true);
             } else if (value === 'new_patient') {
                 isRagMode = false;
-                currentStep = 'new_booking_type';
-                addBotMessage("Is this a new appointment?", newPatientOptions);
+                currentStep = 'new_appointment_type';
+                addBotMessage("Would you like to schedule a new appointment?", newAppointmentOptions);
                 setInputEnabled(false);
             } else if (value === 'existing_patient') {
                 isRagMode = false;
@@ -229,24 +229,24 @@
                 setInputEnabled(false);
             }
         }
-        // New patient → new booking
-        else if (currentStep === 'new_booking_type') {
-            appointmentData.action = value; // 'new_booking'
+        // New patient → new appointment
+        else if (currentStep === 'new_appointment_type') {
+            appointmentData.action = value; // 'new_appointment'
             currentStep = 'procedure';
             addBotMessage("Select procedure:", procedureOptions);
             setInputEnabled(false);
         }
-        // Procedure selection (new booking)
+        // Procedure selection (new appointment)
         else if (currentStep === 'procedure') {
             appointmentData.procedure = value;
             currentStep = 'collecting_name';
             addBotMessage("📝 Please enter your **full name**:", []);
             setInputEnabled(true);
         }
-        // Communication preference (new booking)
+        // Communication preference (new appointment)
         else if (currentStep === 'collecting_comm_pref') {
             appointmentData.preferredCommunication = value;
-            submitAppointment('new_booking');
+            submitAppointment('new_appointment');
         }
         // Existing patient action selection
         else if (currentStep === 'existing_action') {
@@ -256,8 +256,8 @@
                 addBotMessage("📝 Please enter your **full name** as it appears on the appointment:", []);
                 setInputEnabled(true);
             } else { // cancel
-                currentStep = 'collecting_name_email_cancel';
-                addBotMessage("📝 Please enter your **full name** and **email** (e.g., John Doe, john@example.com):", []);
+                currentStep = 'collecting_name_cancel';
+                addBotMessage("📝 Please enter your **full name** as it appears on the appointment:", []);
                 setInputEnabled(true);
             }
         }
@@ -335,7 +335,7 @@
                 setInputEnabled(false);
                 break;
             
-            // Modify flow: name → phone → new procedure → new datetime
+            // Modify flow: name → phone → email → new procedure → new datetime
             case 'collecting_name_modify':
                 appointmentData.name = text;
                 currentStep = 'collecting_phone_modify';
@@ -344,6 +344,12 @@
                 break;
             case 'collecting_phone_modify':
                 appointmentData.phone = text;
+                currentStep = 'collecting_email_modify';
+                addBotMessage("📧 Please enter the **email address** associated with your appointment:", []);
+                setInputEnabled(true);
+                break;
+            case 'collecting_email_modify':
+                appointmentData.email = text;
                 currentStep = 'collecting_new_procedure';
                 addBotMessage("Which procedure would you like to change to?", procedureOptions);
                 setInputEnabled(false);
@@ -353,11 +359,15 @@
                 submitAppointment('modify');
                 break;
             
-            // Cancel flow: name + email in one input (or could be separate)
-            case 'collecting_name_email_cancel':
-                const parts = text.split(',').map(s => s.trim());
-                appointmentData.name = parts[0] || '';
-                appointmentData.email = parts[1] || '';
+            // Cancel flow: name → phone
+            case 'collecting_name_cancel':
+                appointmentData.name = text;
+                currentStep = 'collecting_phone_cancel';
+                addBotMessage("📞 Please enter the **phone number** associated with your appointment:", []);
+                setInputEnabled(true);
+                break;
+            case 'collecting_phone_cancel':
+                appointmentData.phone = text;
                 currentStep = 'confirm_cancel';
                 addBotMessage(`Are you sure you want to cancel the appointment for ${appointmentData.name}?`, [
                     { text: '✅ Yes, cancel it', value: 'confirm_cancel' },
@@ -453,8 +463,8 @@
                     setInputEnabled(true);
                 } else if (action === 'new_patient') {
                     isRagMode = false;
-                    currentStep = 'new_booking_type';
-                    addBotMessage("Is this a new appointment?", newPatientOptions);
+                    currentStep = 'new_appointment_type';
+                    addBotMessage("Would you like to schedule a new appointment?", newAppointmentOptions);
                     setInputEnabled(false);
                 } else if (action === 'existing_patient') {
                     isRagMode = false;
@@ -466,7 +476,7 @@
         });
     }
 
-    // Global listener for dynamic buttons (main menu after RAG, etc.)
+    // Global listener for dynamic buttons
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('chat-btn')) {
             const val = e.target.getAttribute('data-value');
