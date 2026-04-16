@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Smile Dental Clinic | Smart Appointment Scheduler</title>
-    <!-- Google Fonts & simple icons (Font Awesome) -->
+    <title>Smile Dental Clinic | Smart Scheduler</title>
+    <!-- Google Fonts & Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: linear-gradient(145deg, #e0f2fe 0%, #b9e0f5 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
         body::before { content: "🦷"; font-size: 140px; opacity: 0.05; position: absolute; bottom: 20px; right: 20px; pointer-events: none; transform: rotate(-10deg); }
-        .chat-container { width: 100%; max-width: 550px; background: white; border-radius: 40px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.4); overflow: hidden; transition: all 0.2s ease; }
-        .chat-header { background: #1e6f5c; background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%); padding: 20px 24px; color: white; display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #ffd966; }
+        .chat-container { width: 100%; max-width: 550px; background: white; border-radius: 40px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.4); overflow: hidden; }
+        .chat-header { background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%); padding: 20px 24px; color: white; display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #ffd966; }
         .header-icon { background: white; width: 52px; height: 52px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #1e6f5c; box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
         .header-text h1 { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.3px; }
         .header-text p { font-size: 0.8rem; opacity: 0.9; font-weight: 500; margin-top: 4px; }
@@ -23,7 +23,6 @@
         .bubble { padding: 12px 18px; border-radius: 24px; font-size: 0.95rem; line-height: 1.4; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
         .bot-message .bubble { background: #eef2f5; color: #1e2a32; border-bottom-left-radius: 6px; }
         .user-message .bubble { background: #1e6f5c; color: white; border-bottom-right-radius: 6px; }
-        .message-time { font-size: 0.7rem; margin-top: 5px; margin-left: 12px; margin-right: 12px; color: #6c7a89; }
         .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
         .chat-btn { background: white; border: 1.5px solid #cbdde6; padding: 8px 18px; border-radius: 60px; font-size: 0.85rem; font-weight: 600; color: #1e6f5c; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .chat-btn:hover { background: #e0f2e9; border-color: #1e6f5c; transform: translateY(-1px); }
@@ -34,7 +33,7 @@
         .input-field:focus { border-color: #1e6f5c; box-shadow: 0 0 0 2px rgba(30,111,92,0.2); }
         .input-field:disabled { background: #f5f7fa; color: #8b9aaa; cursor: not-allowed; }
         .send-btn { background: #1e6f5c; border: none; color: white; width: 48px; height: 48px; border-radius: 60px; cursor: pointer; font-size: 1.2rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .send-btn:disabled { background: #b0c4ce; cursor: not-allowed; transform: none; }
+        .send-btn:disabled { background: #b0c4ce; cursor: not-allowed; }
         .send-btn:hover:not(:disabled) { background: #0f5545; transform: scale(0.96); }
         .typing-indicator { font-size: 0.8rem; color: #6b7b8c; padding: 8px 12px; background: #eef2f5; width: fit-content; border-radius: 30px; margin-top: 6px; }
         .loader-dots { display: inline-flex; gap: 4px; }
@@ -58,11 +57,11 @@
     </div>
 
     <div class="chat-messages" id="chatMessages">
-        <!-- Welcome message with initial choice buttons -->
+        <!-- Welcome message with main options -->
         <div class="message bot-message">
             <div class="bubble">
-                👋 Welcome to Smile Dental Clinic! I'm your scheduling assistant.<br>
-                Would you like to book as a <strong>New Patient</strong>, manage an <strong>Existing Patient</strong> appointment, or ask a <strong>General Inquiry</strong>?
+                👋 Welcome to Smile Dental Clinic! I'm your virtual assistant.<br>
+                How can I help you today?
             </div>
             <div class="button-group" id="initialButtons">
                 <button class="chat-btn" data-action="new_patient">🦷 New Patient</button>
@@ -76,83 +75,60 @@
         <input type="text" id="userInput" class="input-field" placeholder="Type your answer..." autocomplete="off" disabled>
         <button id="sendBtn" class="send-btn" disabled><i class="fas fa-paper-plane"></i></button>
     </div>
-    <footer>⭐ Secure &nbsp;|&nbsp; Powered by n8n webhook</footer>
+    <footer>⭐ Secure &nbsp;|&nbsp; Powered by n8n</footer>
 </div>
 
 <script>
     // ------------------- CONFIGURATION -------------------
-    // REPLACE WITH YOUR ACTUAL N8N WEBHOOK URLs
-    const APPOINTMENT_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";  // <-- UPDATE THIS (for appointments)
-    const RAG_WEBHOOK_URL = "https://your-n8n-rag-endpoint.com/webhook/rag";  // <-- UPDATE THIS (for RAG Q&A)
+    // UPDATE THESE URLs WITH YOUR ACTUAL N8N WEBHOOK ENDPOINTS
+    const APPOINTMENT_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";
+    const RAG_WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/805670a4-6cc9-4b2f-a45c-d42c69d963e2";  // <-- REPLACE WITH YOUR RAG WEBHOOK
     
-    // Session handling
+    // Session ID (persistent)
     let sessionId = localStorage.getItem('smile_sessionId');
     if (!sessionId) {
         sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
         localStorage.setItem('smile_sessionId', sessionId);
     }
 
-    // ---------- LOCAL FLOW STATE ----------
-    // 'initial'                 → waiting for New/Existing patient or General Inquiry
-    // 'booking_type'            → waiting for New Booking or Existing Booking
-    // 'procedure'               → waiting for procedure selection
-    // 'collecting_name'         → waiting for full name input (appointment)
-    // 'collecting_phone'        → waiting for phone input
-    // 'collecting_email'        → waiting for email input
-    // 'collecting_datetime'     → waiting for date & time input
-    // 'collecting_comm_pref'    → waiting for communication preference (buttons)
-    // 'rag_question'            → waiting for user to type a question (RAG)
-    // 'rag_followup'            → after RAG answer, waiting for "Ask another" or "Back to menu"
-    // 'completed'               → all done
-    let currentLocalStep = 'initial';
-    
-    // Accumulated appointment data
+    // ---------- FLOW STATE ----------
+    let currentStep = 'initial';               // 'initial', 'booking_type', 'procedure', 'collecting_name', ...
+    let isRagMode = false;                     // true when user is in Q&A loop
     let appointmentData = {
-        patientType: '',
-        bookingType: '',
-        procedure: '',
-        name: '',
-        phone: '',
-        email: '',
-        datetime: '',
-        preferredCommunication: ''
+        patientType: '', bookingType: '', procedure: '',
+        name: '', phone: '', email: '', datetime: '', preferredCommunication: ''
     };
 
-    // Flag to differentiate flows
-    let isRagFlow = false;
-    let isAppointmentFlow = false;
-
     // DOM elements
-    const chatContainer = document.getElementById('chatMessages');
-    const userInputField = document.getElementById('userInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
 
     // ---------- UI HELPERS ----------
     function setInputEnabled(enabled) {
-        userInputField.disabled = !enabled;
+        userInput.disabled = !enabled;
         sendBtn.disabled = !enabled;
-        userInputField.placeholder = enabled ? "Type your answer..." : "Please use the buttons above";
-        if (enabled) userInputField.focus();
+        userInput.placeholder = enabled ? "Type your answer..." : "Please use the buttons above";
+        if (enabled) userInput.focus();
     }
 
     function scrollToBottom() {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     function addBotMessage(text, buttons = []) {
         const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message', 'bot-message');
+        msgDiv.className = 'message bot-message';
         const bubble = document.createElement('div');
-        bubble.classList.add('bubble');
+        bubble.className = 'bubble';
         bubble.innerHTML = text.replace(/\n/g, '<br>');
         msgDiv.appendChild(bubble);
-        
         if (buttons.length) {
             const btnGroup = document.createElement('div');
-            btnGroup.classList.add('button-group');
+            btnGroup.className = 'button-group';
             buttons.forEach(btn => {
                 const button = document.createElement('button');
-                button.classList.add('chat-btn');
+                button.className = 'chat-btn';
                 button.innerText = btn.text;
                 button.setAttribute('data-value', btn.value);
                 button.addEventListener('click', () => {
@@ -163,334 +139,286 @@
             });
             msgDiv.appendChild(btnGroup);
         }
-        chatContainer.appendChild(msgDiv);
+        chatMessages.appendChild(msgDiv);
         scrollToBottom();
     }
 
     function addUserMessage(content, isButton = false) {
         const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message', 'user-message');
+        msgDiv.className = 'message user-message';
         const bubble = document.createElement('div');
-        bubble.classList.add('bubble');
+        bubble.className = 'bubble';
         bubble.innerText = content;
         msgDiv.appendChild(bubble);
-        chatContainer.appendChild(msgDiv);
+        chatMessages.appendChild(msgDiv);
         scrollToBottom();
     }
 
     function showTyping() {
         hideTyping();
         const typing = document.createElement('div');
-        typing.classList.add('message', 'bot-message');
+        typing.className = 'message bot-message';
         typing.id = 'typingIndicator';
         typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Thinking...</div>`;
-        chatContainer.appendChild(typing);
+        chatMessages.appendChild(typing);
         scrollToBottom();
     }
     function hideTyping() {
-        const t = document.getElementById('typingIndicator');
-        if (t) t.remove();
+        document.getElementById('typingIndicator')?.remove();
     }
 
-    // Reset to initial welcome state (shows main buttons)
-    function resetToMainMenu() {
-        currentLocalStep = 'initial';
-        isRagFlow = false;
-        isAppointmentFlow = false;
-        appointmentData = {
-            patientType: '', bookingType: '', procedure: '', name: '',
-            phone: '', email: '', datetime: '', preferredCommunication: ''
-        };
-        // Show the initial buttons again
-        document.getElementById('initialButtons').style.display = 'flex';
+    // Reset to main menu
+    function showMainMenu() {
+        currentStep = 'initial';
+        isRagMode = false;
+        appointmentData = { patientType: '', bookingType: '', procedure: '', name: '', phone: '', email: '', datetime: '', preferredCommunication: '' };
+        addBotMessage("👋 What would you like to do?", [
+            { text: '🦷 New Patient', value: 'new_patient' },
+            { text: '📋 Existing Patient', value: 'existing_patient' },
+            { text: '💬 General Inquiry', value: 'general_inquiry' }
+        ]);
         setInputEnabled(false);
     }
 
     // ---------- OPTIONS ----------
     const bookingTypeOptions = [
         { text: '✨ New Booking', value: 'new_booking' },
-        { text: '📅 Existing Booking (modify/cancel)', value: 'existing_booking' }
+        { text: '📅 Existing Booking', value: 'existing_booking' }
     ];
-
     const procedureOptions = [
         { text: '🪥 Routine cleaning / checkup', value: 'Routine cleaning / checkup' },
         { text: '🚨 Emergency / dental pain', value: 'Emergency / dental pain' },
-        { text: '🦷 Consultation (Invisalign, Implants, etc.)', value: 'Consultation (Invisalign, Implants, etc.)' },
-        { text: '🔧 Filling or Tooth Repair', value: 'Filling or Tooth Repair' }
+        { text: '🦷 Consultation (Invisalign, Implants, etc.)', value: 'Consultation' },
+        { text: '🔧 Filling or Tooth Repair', value: 'Filling / Repair' }
     ];
-
     const commPrefOptions = [
         { text: '📞 Phone', value: 'Phone' },
         { text: '💬 Text', value: 'Text' },
         { text: '📧 Email', value: 'Email' }
     ];
-
     const ragFollowUpOptions = [
         { text: '🔄 Ask another question', value: 'ask_another' },
         { text: '🏠 Back to main menu', value: 'main_menu' }
     ];
 
-    // ---------- HANDLE BUTTON CLICKS ----------
+    // ---------- BUTTON HANDLER ----------
     function handleButtonClick(value) {
-        if (currentLocalStep === 'initial') {
-            appointmentData.patientType = value;
+        if (currentStep === 'initial') {
+            // Hide the static initial buttons (they are inside the first message, so we hide that group)
             document.getElementById('initialButtons').style.display = 'none';
-            
+            appointmentData.patientType = value;
             if (value === 'general_inquiry') {
-                isRagFlow = true;
-                isAppointmentFlow = false;
-                currentLocalStep = 'rag_question';
-                addBotMessage("💡 I'm here to answer your questions about our clinic, services, hours, and more!<br><br>What would you like to know? Type your question below.", []);
+                isRagMode = true;
+                currentStep = 'rag_question';
+                addBotMessage("💡 I'm here to answer questions about our clinic, services, hours, and more!<br><br>What would you like to know?", []);
                 setInputEnabled(true);
             } else {
-                isRagFlow = false;
-                isAppointmentFlow = true;
-                currentLocalStep = 'booking_type';
+                isRagMode = false;
+                currentStep = 'booking_type';
                 addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
                 setInputEnabled(false);
             }
         }
-        else if (currentLocalStep === 'booking_type') {
+        else if (currentStep === 'booking_type') {
             appointmentData.bookingType = value;
-            currentLocalStep = 'procedure';
+            currentStep = 'procedure';
             addBotMessage("Great! Please select the procedure you need:", procedureOptions);
             setInputEnabled(false);
         }
-        else if (currentLocalStep === 'procedure') {
+        else if (currentStep === 'procedure') {
             appointmentData.procedure = value;
-            currentLocalStep = 'collecting_name';
+            currentStep = 'collecting_name';
             addBotMessage("📝 Please enter your **full name**:", []);
             setInputEnabled(true);
         }
-        else if (currentLocalStep === 'collecting_comm_pref') {
+        else if (currentStep === 'collecting_comm_pref') {
             appointmentData.preferredCommunication = value;
-            submitAppointmentToWebhook();
+            submitAppointment();
         }
-        else if (currentLocalStep === 'rag_followup') {
+        else if (currentStep === 'rag_followup') {
             if (value === 'ask_another') {
-                currentLocalStep = 'rag_question';
+                currentStep = 'rag_question';
                 addBotMessage("Sure! What else would you like to know?", []);
                 setInputEnabled(true);
             } else if (value === 'main_menu') {
-                resetToMainMenu();
-                // Re-show welcome message with buttons
-                addBotMessage("👋 Welcome back! What would you like to do?", [
-                    { text: '🦷 New Patient', value: 'new_patient' },
-                    { text: '📋 Existing Patient', value: 'existing_patient' },
-                    { text: '💬 General Inquiry', value: 'general_inquiry' }
-                ]);
-                // Re-bind these new buttons via the global handler? 
-                // The addBotMessage already attaches listeners; we need to ensure they work.
-                // The resetToMainMenu hides the original initialButtons div, but we added new buttons.
-                // We also need to hide the original static button group.
-                document.getElementById('initialButtons').style.display = 'none';
+                showMainMenu();
+            }
+        }
+        // Handle main menu selections from dynamically added buttons
+        if (value === 'new_patient' || value === 'existing_patient' || value === 'general_inquiry') {
+            if (currentStep === 'initial' || currentStep === 'rag_followup' || currentStep === 'completed') {
+                appointmentData.patientType = value;
+                if (value === 'general_inquiry') {
+                    isRagMode = true;
+                    currentStep = 'rag_question';
+                    addBotMessage("💡 What would you like to know about our clinic?", []);
+                    setInputEnabled(true);
+                } else {
+                    isRagMode = false;
+                    currentStep = 'booking_type';
+                    addBotMessage("Is this a new appointment or manage an existing booking?", bookingTypeOptions);
+                    setInputEnabled(false);
+                }
             }
         }
     }
 
-    // ---------- HANDLE TEXT INPUT ----------
+    // ---------- TEXT INPUT HANDLER ----------
     function handleTextInput() {
-        const rawText = userInputField.value.trim();
-        if (!rawText) return;
-
-        addUserMessage(rawText, false);
-        userInputField.value = '';
+        const text = userInput.value.trim();
+        if (!text) return;
+        addUserMessage(text, false);
+        userInput.value = '';
         setInputEnabled(false);
 
-        if (isRagFlow && currentLocalStep === 'rag_question') {
-            // Send question to RAG webhook
-            sendToRagWebhook(rawText);
-        }
-        else if (isAppointmentFlow) {
-            // Appointment flow: name → phone → email → datetime → comm pref
-            switch (currentLocalStep) {
+        if (isRagMode && currentStep === 'rag_question') {
+            sendRagQuery(text);
+        } else {
+            // Appointment flow
+            switch (currentStep) {
                 case 'collecting_name':
-                    appointmentData.name = rawText;
-                    currentLocalStep = 'collecting_phone';
+                    appointmentData.name = text;
+                    currentStep = 'collecting_phone';
                     addBotMessage("📞 What is the best **phone number** to reach you?", []);
                     setInputEnabled(true);
                     break;
                 case 'collecting_phone':
-                    appointmentData.phone = rawText;
-                    currentLocalStep = 'collecting_email';
+                    appointmentData.phone = text;
+                    currentStep = 'collecting_email';
                     addBotMessage("📧 Please provide your **email address** for confirmation:", []);
                     setInputEnabled(true);
                     break;
                 case 'collecting_email':
-                    appointmentData.email = rawText;
-                    currentLocalStep = 'collecting_datetime';
-                    addBotMessage("📅 When would you like to come in? Please provide **date and preferred time** (e.g., 'April 12, 10:30 AM'):", []);
+                    appointmentData.email = text;
+                    currentStep = 'collecting_datetime';
+                    addBotMessage("📅 When would you like to come in? (e.g., 'April 12, 10:30 AM')", []);
                     setInputEnabled(true);
                     break;
                 case 'collecting_datetime':
-                    appointmentData.datetime = rawText;
-                    currentLocalStep = 'collecting_comm_pref';
-                    addBotMessage("📲 How would you prefer we contact you for appointment reminders and confirmations?", commPrefOptions);
+                    appointmentData.datetime = text;
+                    currentStep = 'collecting_comm_pref';
+                    addBotMessage("📲 How would you prefer we contact you?", commPrefOptions);
                     setInputEnabled(false);
                     break;
                 default:
                     addBotMessage("Please use the buttons to continue.", []);
                     setInputEnabled(false);
             }
-        } else {
-            // Fallback
-            addBotMessage("I didn't understand that. Let's start over.", []);
-            resetToMainMenu();
         }
     }
 
-    // ---------- SEND QUESTION TO RAG WEBHOOK ----------
-    async function sendToRagWebhook(question) {
+    // ---------- RAG WEBHOOK CALL ----------
+    async function sendRagQuery(question) {
         showTyping();
         setInputEnabled(false);
-
-        const payload = {
-            sessionId: sessionId,
-            question: question
-        };
-
         try {
             const response = await fetch(RAG_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ sessionId, question })
             });
-
             hideTyping();
-            
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
-            const result = await response.json();
-            // Expecting { answer: "..." } or similar
-            const answer = result.answer || "I'm sorry, I couldn't find an answer to that question. Please try rephrasing or contact the clinic directly.";
-            
+            const data = await response.json();
+            const answer = data.answer || "I'm sorry, I couldn't find an answer. Please try rephrasing or contact the clinic directly.";
             addBotMessage(answer);
-            
-            // Ask follow-up
-            currentLocalStep = 'rag_followup';
+            currentStep = 'rag_followup';
             addBotMessage("Would you like to ask another question or return to the main menu?", ragFollowUpOptions);
-            setInputEnabled(false);
-            
         } catch (error) {
             hideTyping();
-            console.error("RAG webhook error:", error);
-            addBotMessage("⚠️ Sorry, I'm having trouble answering questions right now. Please try again later or call the clinic directly.", []);
-            currentLocalStep = 'rag_followup';
-            addBotMessage("Would you like to try asking again or go back to the main menu?", ragFollowUpOptions);
-            setInputEnabled(false);
+            console.error("RAG error:", error);
+            addBotMessage("⚠️ Sorry, I'm having trouble answering right now. Please try again later.");
+            currentStep = 'rag_followup';
+            addBotMessage("What would you like to do next?", ragFollowUpOptions);
         }
     }
 
-    // ---------- SUBMIT APPOINTMENT TO WEBHOOK ----------
-    async function submitAppointmentToWebhook() {
+    // ---------- APPOINTMENT SUBMISSION ----------
+    async function submitAppointment() {
         showTyping();
         setInputEnabled(false);
-        currentLocalStep = 'completed';
-
+        currentStep = 'completed';
         const payload = {
-            sessionId: sessionId,
+            sessionId,
             action: "submit_appointment",
-            data: {
-                ...appointmentData,
-                status: "confirmed"
-            }
+            data: { ...appointmentData, status: "confirmed" }
         };
-
         try {
             const response = await fetch(APPOINTMENT_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             hideTyping();
-            
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
-            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly via your preferred method. Have a great day! 😊", []);
-            
-            addBotMessage("Would you like to start over?", [
-                { text: "🔄 Start Over", value: "restart" }
-            ]);
-            
+            addBotMessage("✅ Thank you! Your appointment request has been received. We'll confirm shortly. 😊");
+            addBotMessage("Would you like to start over?", [{ text: "🔄 Start Over", value: "restart" }]);
             setTimeout(() => {
                 document.querySelectorAll('.chat-btn[data-value="restart"]').forEach(btn => {
                     btn.addEventListener('click', () => location.reload());
                 });
             }, 100);
-            
         } catch (error) {
             hideTyping();
-            console.error("Appointment webhook error:", error);
-            addBotMessage("⚠️ Sorry, we couldn't process your request. Please try again or call the clinic directly.", []);
+            console.error("Appointment error:", error);
+            addBotMessage("⚠️ Sorry, we couldn't process your request. Please try again or call us directly.");
         }
     }
 
-    // ---------- BIND INITIAL BUTTONS ----------
+    // ---------- INITIAL BINDINGS ----------
     function bindInitialButtons() {
-        const newBtn = document.querySelector('#initialButtons .chat-btn[data-action="new_patient"]');
-        const existBtn = document.querySelector('#initialButtons .chat-btn[data-action="existing_patient"]');
-        const inquiryBtn = document.querySelector('#initialButtons .chat-btn[data-action="general_inquiry"]');
-        
-        const handleInitialClick = (type, displayText) => {
-            addUserMessage(displayText, true);
-            appointmentData.patientType = type;
-            document.getElementById('initialButtons').style.display = 'none';
-            
-            if (type === 'general_inquiry') {
-                isRagFlow = true;
-                isAppointmentFlow = false;
-                currentLocalStep = 'rag_question';
-                addBotMessage("💡 I'm here to answer your questions about our clinic, services, hours, and more!<br><br>What would you like to know? Type your question below.", []);
-                setInputEnabled(true);
-            } else {
-                isRagFlow = false;
-                isAppointmentFlow = true;
-                currentLocalStep = 'booking_type';
-                addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
-                setInputEnabled(false);
-            }
-        };
-
-        if (newBtn) newBtn.addEventListener('click', () => handleInitialClick('new_patient', 'New Patient'));
-        if (existBtn) existBtn.addEventListener('click', () => handleInitialClick('existing_patient', 'Existing Patient'));
-        if (inquiryBtn) inquiryBtn.addEventListener('click', () => handleInitialClick('general_inquiry', 'General Inquiry'));
+        const btns = document.querySelectorAll('#initialButtons .chat-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const action = btn.getAttribute('data-action');
+                addUserMessage(btn.innerText, true);
+                appointmentData.patientType = action;
+                document.getElementById('initialButtons').style.display = 'none';
+                if (action === 'general_inquiry') {
+                    isRagMode = true;
+                    currentStep = 'rag_question';
+                    addBotMessage("💡 What would you like to know about our clinic?", []);
+                    setInputEnabled(true);
+                } else {
+                    isRagMode = false;
+                    currentStep = 'booking_type';
+                    addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
+                    setInputEnabled(false);
+                }
+            });
+        });
     }
 
-    // Global listener for dynamically added buttons (like main menu after RAG)
+    // Global listener for dynamic buttons (like main menu after RAG)
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('chat-btn')) {
-            const value = e.target.getAttribute('data-value');
-            if (value === 'new_patient' || value === 'existing_patient' || value === 'general_inquiry') {
-                if (currentLocalStep === 'initial' || currentLocalStep === 'rag_followup') {
-                    // Handle main menu selection from dynamically added buttons
-                    addUserMessage(e.target.innerText, true);
-                    appointmentData.patientType = value;
-                    if (value === 'general_inquiry') {
-                        isRagFlow = true;
-                        isAppointmentFlow = false;
-                        currentLocalStep = 'rag_question';
-                        addBotMessage("💡 I'm here to answer your questions about our clinic, services, hours, and more!<br><br>What would you like to know? Type your question below.", []);
-                        setInputEnabled(true);
-                    } else {
-                        isRagFlow = false;
-                        isAppointmentFlow = true;
-                        currentLocalStep = 'booking_type';
-                        addBotMessage("Is this a new appointment or would you like to manage an existing booking?", bookingTypeOptions);
-                        setInputEnabled(false);
-                    }
+            const val = e.target.getAttribute('data-value');
+            if ((val === 'new_patient' || val === 'existing_patient' || val === 'general_inquiry') &&
+                (currentStep === 'initial' || currentStep === 'rag_followup' || currentStep === 'completed')) {
+                addUserMessage(e.target.innerText, true);
+                appointmentData.patientType = val;
+                if (val === 'general_inquiry') {
+                    isRagMode = true;
+                    currentStep = 'rag_question';
+                    addBotMessage("💡 What would you like to know about our clinic?", []);
+                    setInputEnabled(true);
+                } else {
+                    isRagMode = false;
+                    currentStep = 'booking_type';
+                    addBotMessage("Is this a new appointment or manage an existing booking?", bookingTypeOptions);
+                    setInputEnabled(false);
                 }
             }
         }
     });
 
-    // ---------- SEND BUTTON & ENTER ----------
+    // Send button & Enter key
     sendBtn.addEventListener('click', handleTextInput);
-    userInputField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !userInputField.disabled) handleTextInput();
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !userInput.disabled) handleTextInput();
     });
 
-    // Start: disable input (initial buttons visible)
+    // Start
     setInputEnabled(false);
     bindInitialButtons();
 </script>
