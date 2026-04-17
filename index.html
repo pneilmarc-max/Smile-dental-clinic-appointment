@@ -4,170 +4,316 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Smile Dental Clinic | Smart Scheduler</title>
-    <!-- (CSS unchanged – keep the existing styles) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* ... all existing CSS ... */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(145deg, #e0f2fe 0%, #b9e0f5 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        body::before { content: "🦷"; font-size: 140px; opacity: 0.05; position: absolute; bottom: 20px; right: 20px; pointer-events: none; transform: rotate(-10deg); }
+        .chat-container { width: 100%; max-width: 550px; background: white; border-radius: 40px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.4); overflow: hidden; }
+        .chat-header { background: linear-gradient(135deg, #1e6f5c 0%, #289672 100%); padding: 20px 24px; color: white; display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #ffd966; }
+        .header-icon { background: white; width: 52px; height: 52px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #1e6f5c; box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .header-text h1 { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.3px; }
+        .header-text p { font-size: 0.8rem; opacity: 0.9; font-weight: 500; margin-top: 4px; }
+        .chat-messages { height: 450px; overflow-y: auto; padding: 20px 18px; background: #fefdf8; display: flex; flex-direction: column; gap: 16px; }
+        .message { display: flex; flex-direction: column; max-width: 85%; animation: fadeInUp 0.2s ease; }
+        .bot-message { align-self: flex-start; }
+        .user-message { align-self: flex-end; }
+        .bubble { padding: 12px 18px; border-radius: 24px; font-size: 0.95rem; line-height: 1.4; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+        .bot-message .bubble { background: #eef2f5; color: #1e2a32; border-bottom-left-radius: 6px; }
+        .user-message .bubble { background: #1e6f5c; color: white; border-bottom-right-radius: 6px; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .chat-btn { background: white; border: 1.5px solid #cbdde6; padding: 8px 18px; border-radius: 60px; font-size: 0.85rem; font-weight: 600; color: #1e6f5c; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-btn:hover { background: #e0f2e9; border-color: #1e6f5c; transform: translateY(-1px); }
+        .chat-btn:active { transform: translateY(1px); }
+        .chat-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .input-area { padding: 16px 20px 24px; background: white; border-top: 1px solid #e9edf2; display: flex; gap: 12px; align-items: center; }
+        .input-field { flex: 1; padding: 12px 18px; border-radius: 60px; border: 1px solid #cfdfe8; font-size: 0.95rem; font-family: 'Inter', sans-serif; outline: none; transition: 0.2s; }
+        .input-field:focus { border-color: #1e6f5c; box-shadow: 0 0 0 2px rgba(30,111,92,0.2); }
+        .input-field:disabled { background: #f5f7fa; color: #8b9aaa; cursor: not-allowed; }
+        .send-btn { background: #1e6f5c; border: none; color: white; width: 48px; height: 48px; border-radius: 60px; cursor: pointer; font-size: 1.2rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .send-btn:disabled { background: #b0c4ce; cursor: not-allowed; }
+        .send-btn:hover:not(:disabled) { background: #0f5545; transform: scale(0.96); }
+        .typing-indicator { font-size: 0.8rem; color: #6b7b8c; padding: 8px 12px; background: #eef2f5; width: fit-content; border-radius: 30px; margin-top: 6px; }
+        .loader-dots { display: inline-flex; gap: 4px; }
+        .loader-dots span { width: 6px; height: 6px; background: #6b7b8c; border-radius: 50%; animation: blink 1.4s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        footer { font-size: 0.7rem; text-align: center; padding: 10px; background: #f7f9fc; color: #7a8b9b; border-top: 1px solid #e2e8f0; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #e9edf2; }
+        ::-webkit-scrollbar-thumb { background: #b9cfdf; border-radius: 8px; }
     </style>
 </head>
 <body>
 <div class="chat-container">
-    <!-- ... header, messages, input area unchanged ... -->
+    <div class="chat-header">
+        <div class="header-icon"><i class="fas fa-tooth"></i></div>
+        <div class="header-text">
+            <h1>Smile Dental Clinic</h1>
+            <p>✨ Smart scheduling • gentle care</p>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot-message">
+            <div class="bubble">
+                👋 Welcome to Smile Dental Clinic! I'm your virtual assistant.<br>
+                How can I help you today?
+            </div>
+            <div class="button-group" id="initialButtons">
+                <button class="chat-btn" data-action="new_appointment">🦷 New Appointment</button>
+                <button class="chat-btn" data-action="existing_appointment">📋 Existing Appointment</button>
+                <button class="chat-btn" data-action="general_inquiry">💬 General Inquiry</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area" id="inputArea">
+        <input type="text" id="userInput" class="input-field" placeholder="Type your answer..." autocomplete="off" disabled>
+        <button id="sendBtn" class="send-btn" disabled><i class="fas fa-paper-plane"></i></button>
+    </div>
+    <footer>⭐ Secure &nbsp;|&nbsp; Powered by n8n</footer>
 </div>
 
 <script>
-    // ------------------- SINGLE WEBHOOK -------------------
-    const WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";
-    
-    let sessionId = localStorage.getItem('smile_sessionId');
-    if (!sessionId) {
-        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-        localStorage.setItem('smile_sessionId', sessionId);
-    }
-
-    let currentPhase = 'main';
-    let currentAction = '';
-    let isWaitingForAI = false;
-    
-    const chatMessages = document.getElementById('chatMessages');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
-
-    // ---------- UI HELPERS (same as before) ----------
-    // ... include all helper functions: setInputEnabled, scrollToBottom, addBotMessage, addUserMessage, showTyping, hideTyping, showMainMenu ...
-
-    async function sendToWebhook(action, userInputValue = null) {
-        showTyping();
-        setInputEnabled(false);
-        isWaitingForAI = true;
+    (function(){
+        // ------------------- SINGLE WEBHOOK -------------------
+        const WEBHOOK_URL = "https://n8n.n8ncreation.cc/webhook-test/8a8e471b-94cd-466f-8bda-9c313f4ca425";
         
-        const payload = { sessionId, action, userInput: userInputValue };
-        
-        try {
-            const response = await fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            hideTyping();
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
-            const contentType = response.headers.get('content-type');
-            let data;
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                const text = await response.text();
-                data = { message: text };
+        let sessionId = localStorage.getItem('smile_sessionId');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+            localStorage.setItem('smile_sessionId', sessionId);
+        }
+
+        // ---------- STATE ----------
+        let currentPhase = 'main';          // 'main', 'existing_submenu', 'conversation', 'rag', 'completed', 'error'
+        let currentAction = '';
+        let isWaitingForAI = false;
+
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // ---------- UI HELPERS ----------
+        function setInputEnabled(enabled) {
+            userInput.disabled = !enabled;
+            sendBtn.disabled = !enabled;
+            userInput.placeholder = enabled ? "Type your answer..." : "Please use the buttons above";
+            if (enabled) userInput.focus();
+        }
+
+        function scrollToBottom() { 
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
+        }
+
+        function addBotMessage(text, buttons = []) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message bot-message';
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = text.replace(/\n/g, '<br>');
+            msgDiv.appendChild(bubble);
+            if (buttons && buttons.length) {
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'button-group';
+                buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.className = 'chat-btn';
+                    button.innerText = btn.text;
+                    button.setAttribute('data-value', btn.value);
+                    btnGroup.appendChild(button);
+                });
+                msgDiv.appendChild(btnGroup);
             }
-            
-            const botMessage = data.message || data.answer || "I'm not sure how to respond.";
-            const buttons = data.buttons || [];
-            addBotMessage(botMessage, buttons);
-            
-            setInputEnabled(buttons.length === 0);
-            
-            if (data.completed) {
-                currentPhase = 'completed';
-                addBotMessage("What would you like to do next?", [
-                    { text: '🦷 New Appointment', value: 'new_appointment' },
-                    { text: '📋 Existing Appointment', value: 'existing_appointment' },
-                    { text: '💬 General Inquiry', value: 'general_inquiry' }
-                ]);
-                setInputEnabled(false);
-            }
-        } catch (error) {
+            chatMessages.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function addUserMessage(content) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message user-message';
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerText = content;
+            msgDiv.appendChild(bubble);
+            chatMessages.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function showTyping() {
             hideTyping();
-            console.error("Webhook error:", error);
-            addBotMessage(
-                `⚠️ Sorry, I couldn't connect to the scheduling service.<br><br>Error: ${error.message}`,
-                [
-                    { text: '🔄 Try Again', value: 'retry_' + action },
-                    { text: '🏠 Main Menu', value: 'main_menu' }
-                ]
-            );
+            const typing = document.createElement('div');
+            typing.className = 'message bot-message';
+            typing.id = 'typingIndicator';
+            typing.innerHTML = `<div class="typing-indicator"><div class="loader-dots"><span>.</span><span>.</span><span>.</span></div> Thinking...</div>`;
+            chatMessages.appendChild(typing);
+            scrollToBottom();
+        }
+
+        function hideTyping() { 
+            const t = document.getElementById('typingIndicator');
+            if (t) t.remove(); 
+        }
+
+        function showMainMenu() {
+            currentPhase = 'main';
+            currentAction = '';
+            isWaitingForAI = false;
+            addBotMessage("👋 What would you like to do?", [
+                { text: '🦷 New Appointment', value: 'new_appointment' },
+                { text: '📋 Existing Appointment', value: 'existing_appointment' },
+                { text: '💬 General Inquiry', value: 'general_inquiry' }
+            ]);
             setInputEnabled(false);
-            currentPhase = 'error';
         }
-        isWaitingForAI = false;
-    }
 
-    async function handleUserInput(value, isButton = true) {
-        if (isWaitingForAI) return;
-        addUserMessage(value);
-        
-        if (currentPhase === 'main') {
-            if (value === 'new_appointment') {
-                currentPhase = 'conversation';
-                currentAction = 'new_appointment';
-                await sendToWebhook('new_appointment', null);
-            } else if (value === 'existing_appointment') {
-                currentPhase = 'existing_submenu';
-                addBotMessage("What would you like to do with your existing appointment?", [
-                    { text: '✏️ Modify Appointment', value: 'modify' },
-                    { text: '❌ Cancel Appointment', value: 'cancel' }
-                ]);
+        // ---------- SEND TO WEBHOOK ----------
+        async function sendToWebhook(action, userInputValue = null) {
+            showTyping();
+            setInputEnabled(false);
+            isWaitingForAI = true;
+            
+            const payload = {
+                sessionId,
+                action,
+                userInput: userInputValue
+            };
+            
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                hideTyping();
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const contentType = response.headers.get('content-type');
+                let data;
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    data = { message: text };
+                }
+                
+                const botMessage = data.message || data.answer || "I'm not sure how to respond.";
+                const buttons = data.buttons || [];
+                
+                addBotMessage(botMessage, buttons);
+                
+                if (buttons.length === 0) {
+                    setInputEnabled(true);
+                } else {
+                    setInputEnabled(false);
+                }
+                
+                if (data.completed) {
+                    currentPhase = 'completed';
+                    addBotMessage("What would you like to do next?", [
+                        { text: '🦷 New Appointment', value: 'new_appointment' },
+                        { text: '📋 Existing Appointment', value: 'existing_appointment' },
+                        { text: '💬 General Inquiry', value: 'general_inquiry' }
+                    ]);
+                    setInputEnabled(false);
+                }
+            } catch (error) {
+                hideTyping();
+                console.error("Webhook error:", error);
+                addBotMessage(
+                    `⚠️ Sorry, I couldn't connect to the scheduling service.<br><br>Error: ${error.message}`,
+                    [
+                        { text: '🔄 Try Again', value: 'retry_' + action },
+                        { text: '🏠 Main Menu', value: 'main_menu' }
+                    ]
+                );
                 setInputEnabled(false);
-            } else if (value === 'general_inquiry') {
-                currentPhase = 'rag';
-                currentAction = 'rag_query';
-                addBotMessage("💡 What would you like to know about our clinic?", []);
-                setInputEnabled(true);
+                currentPhase = 'error';
             }
-        } else if (currentPhase === 'existing_submenu') {
-            currentPhase = 'conversation';
-            currentAction = value;
-            await sendToWebhook(value, null);
-        } else if (currentPhase === 'conversation' || currentPhase === 'rag') {
-            await sendToWebhook(currentAction, value);
-        } else if (currentPhase === 'completed') {
-            if (['new_appointment','existing_appointment','general_inquiry'].includes(value)) {
-                currentPhase = 'main';
-                handleUserInput(value, true);
+            isWaitingForAI = false;
+        }
+
+        // ---------- HANDLE USER INPUT ----------
+        async function handleUserInput(value, isButton = true) {
+            if (isWaitingForAI) return;
+            addUserMessage(value);
+            
+            if (currentPhase === 'main') {
+                if (value === 'new_appointment') {
+                    currentPhase = 'conversation';
+                    currentAction = 'new_appointment';
+                    await sendToWebhook('new_appointment', null);
+                } else if (value === 'existing_appointment') {
+                    currentPhase = 'existing_submenu';
+                    addBotMessage("What would you like to do with your existing appointment?", [
+                        { text: '✏️ Modify Appointment', value: 'modify' },
+                        { text: '❌ Cancel Appointment', value: 'cancel' }
+                    ]);
+                    setInputEnabled(false);
+                } else if (value === 'general_inquiry') {
+                    currentPhase = 'rag';
+                    currentAction = 'rag_query';
+                    addBotMessage("💡 What would you like to know about our clinic?", []);
+                    setInputEnabled(true);
+                }
+            } else if (currentPhase === 'existing_submenu') {
+                currentPhase = 'conversation';
+                currentAction = value; // 'modify' or 'cancel'
+                await sendToWebhook(value, null);
+            } else if (currentPhase === 'conversation' || currentPhase === 'rag') {
+                await sendToWebhook(currentAction, value);
+            } else if (currentPhase === 'completed') {
+                if (['new_appointment','existing_appointment','general_inquiry'].includes(value)) {
+                    currentPhase = 'main';
+                    handleUserInput(value, true);
+                }
             }
         }
-    }
 
-    // Event delegation for buttons
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.chat-btn');
-        if (!btn) return;
-        const value = btn.getAttribute('data-value');
-        if (!value) return;
-        
-        if (value === 'main_menu') {
-            showMainMenu();
-            return;
-        }
-        if (value.startsWith('retry_')) {
-            const action = value.replace('retry_', '');
-            currentPhase = 'conversation';
-            currentAction = action;
-            sendToWebhook(action, null);
-            return;
-        }
-        
-        const initialGroup = document.getElementById('initialButtons');
-        if (initialGroup && initialGroup.style.display !== 'none') {
-            initialGroup.style.display = 'none';
-        }
-        handleUserInput(value, true);
-    });
+        // ---------- EVENT LISTENERS ----------
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.chat-btn');
+            if (!btn) return;
+            const value = btn.getAttribute('data-value');
+            if (!value) return;
+            
+            if (value === 'main_menu') {
+                showMainMenu();
+                return;
+            }
+            if (value.startsWith('retry_')) {
+                const action = value.replace('retry_', '');
+                currentPhase = 'conversation';
+                currentAction = action;
+                sendToWebhook(action, null);
+                return;
+            }
+            
+            const initialGroup = document.getElementById('initialButtons');
+            if (initialGroup && initialGroup.style.display !== 'none') {
+                initialGroup.style.display = 'none';
+            }
+            handleUserInput(value, true);
+        });
 
-    // Text input handling
-    async function handleTextInput() {
-        const text = userInput.value.trim();
-        if (!text) return;
-        userInput.value = '';
+        async function handleTextInput() {
+            const text = userInput.value.trim();
+            if (!text) return;
+            userInput.value = '';
+            setInputEnabled(false);
+            await handleUserInput(text, false);
+        }
+
+        sendBtn.addEventListener('click', handleTextInput);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !userInput.disabled) handleTextInput();
+        });
+
+        // Start
         setInputEnabled(false);
-        await handleUserInput(text, false);
-    }
-
-    sendBtn.addEventListener('click', handleTextInput);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !userInput.disabled) handleTextInput();
-    });
-
-    setInputEnabled(false);
+    })();
 </script>
 </body>
 </html>
